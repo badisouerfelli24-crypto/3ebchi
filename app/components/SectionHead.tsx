@@ -18,7 +18,13 @@ export default function SectionHead({
         // {n} — {label}
       </p>
       <h2 className="display mt-4 text-[13vw] sm:text-7xl" data-reveal style={{ ["--d" as string]: "80ms" }}>
-        <span className="chroma">{title}</span>
+        <span
+          className="glitch chroma"
+          data-text={title}
+          style={{ ["--gd" as string]: `${(Number(n) * 1.7) % 5}s` }}
+        >
+          {title}
+        </span>
         {outline && (
           <>
             {" "}

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     // Réservations : d'aujourd'hui et à venir, triées.
     let q = sb
       .from("bookings")
-      .select("id, barber, service, price, duration_min, date, start_time, client_name, phone, note, status")
+      .select("id, ref, barber, service, price, duration_min, date, start_time, client_name, phone, note, status")
       .gte("date", today)
       .neq("status", "cancelled")
       .order("date", { ascending: true })

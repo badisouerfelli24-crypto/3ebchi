@@ -144,7 +144,7 @@ export const VIDEOS: TikTokVideo[] = [
   { title: "Club Africain vibes ❤️🤍", views: "12.9K", url: "https://www.tiktok.com/@abdouabidi8/video/7607875679320837394", src: "/reels/club-africain.mp4", poster: "/reels/club-africain.jpg" },
   { title: "Hairstyle transformation", views: "11.3K", url: "https://www.tiktok.com/@abdouabidi8/video/7109469999219117318", src: "/reels/transformation.mp4", poster: "/reels/transformation.jpg" },
   { title: "Clubiste fresh cut", views: "10.7K", url: "https://www.tiktok.com/@abdouabidi8/video/7578576569094917388", src: "/reels/clubiste.mp4", poster: "/reels/clubiste.jpg" },
-  { title: "Maghreb barbershop 🇹🇳🇱🇾🇩🇿", views: "4.1K", url: "https://www.tiktok.com/@abdouabidi8/video/7533378595285159173", src: "/reels/maghreb.mp4", poster: "/reels/maghreb.jpg" },
+  { title: "Maghreb hajema 🇹🇳🇱🇾🇩🇿", views: "4.1K", url: "https://www.tiktok.com/@abdouabidi8/video/7533378595285159173", src: "/reels/maghreb.mp4", poster: "/reels/maghreb.jpg" },
   { title: "Ali Youssef ⚽✂️", views: "3.3K", url: "https://www.tiktok.com/@abdouabidi8/video/7479957347922709766", src: "/reels/ali-youssef.mp4", poster: "/reels/ali-youssef.jpg" },
 ];
 

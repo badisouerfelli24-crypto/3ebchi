@@ -20,7 +20,7 @@ export default function Hero() {
       <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-[1.25fr_0.75fr]">
         <div>
           <p className="label" data-reveal>
-            // Barbershop — Tunis 🇹🇳
+            // Hajem — Tunis 🇹🇳
           </p>
 
           <h1 className="display mt-5 text-[22vw] sm:text-[9.5rem] lg:text-[10.5rem]">
@@ -81,7 +81,7 @@ export default function Hero() {
               ))}
             </div>
             <div className="text-sm leading-tight">
-              <div className="font-bold">{BARBERS.length} barbers · {SITE.city}</div>
+              <div className="font-bold">{BARBERS.length} hajema · {SITE.city}</div>
               <div className="font-mono text-xs text-muted">
                 {STATS[0]?.value} followers · {STATS[1]?.value} likes
               </div>
@@ -108,7 +108,7 @@ export default function Hero() {
             </defs>
             <circle cx="100" cy="100" r="96" fill="rgba(10,10,11,0.75)" stroke="rgba(255,255,255,0.12)" />
             <text fill="#f5f5f4" fontSize="15.5" fontWeight="800" letterSpacing="3.2" fontFamily="var(--font-mono)">
-              <textPath href="#circle">BARBER KING · #3EBCHI_STYLE · TUNIS · </textPath>
+              <textPath href="#circle">HAJEM KING · #3EBCHI_STYLE · TUNIS · </textPath>
             </text>
             <text x="100" y="114" textAnchor="middle" fontSize="40">
               🦍

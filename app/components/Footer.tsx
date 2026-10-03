@@ -19,7 +19,7 @@ export default function Footer() {
             <a href={SITE.tiktokUrl} target="_blank" rel="noopener noreferrer" className="hover:text-fg">TikTok ↗</a>
             <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:text-fg">Maps ↗</a>
             <a href="/v1" className="hover:text-fg">Ancienne version</a>
-            <a href="/barber" className="hover:text-fg">Espace barber 🔒</a>
+            <a href="/barber" className="hover:text-fg">Espace hajem 🔒</a>
           </div>
         </div>
         <p className="mt-8 font-mono text-xs text-muted/60">© {year} {SITE.name}</p>

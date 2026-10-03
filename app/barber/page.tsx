@@ -7,6 +7,7 @@ import { isClosedDay } from "@/lib/slots";
 
 type Booking = {
   id: string;
+  ref: string | null;
   barber: string;
   service: string;
   price: number;
@@ -123,7 +124,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12">
       <div className="mb-6 text-center">
-        <div className="font-display font-black text-4xl text-cyan">Espace barber 🔒</div>
+        <div className="font-display font-black text-4xl text-cyan">Espace hajem 🔒</div>
         <p className="mt-2 text-fg/60">A5tar esmek w da5el l&apos;PIN</p>
       </div>
 
@@ -228,7 +229,7 @@ function Dashboard({
             Ahla {data.me.name} 💈
           </div>
           <p className="text-sm text-fg/50">
-            {viewAll ? "Tous les barbiers" : "Tes réservations"}
+            {viewAll ? "Tous les hajema" : "Tes réservations"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -333,6 +334,7 @@ function BookingCard({
           <div className="font-display font-bold text-2xl tracking-wide text-cyan">
             {b.start_time.slice(0, 5)} · {b.client_name}
           </div>
+          {b.ref && <div className="font-mono text-xs tracking-[0.15em] text-cyan">#{b.ref}</div>}
           <div className="text-sm text-fg/70">
             {b.service} · {b.price} DT · {b.duration_min} min
             {showBarber && <span className="ml-1 text-fg/40">({b.barber})</span>}

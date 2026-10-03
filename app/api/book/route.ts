@@ -18,7 +18,8 @@ export async function POST(req: NextRequest) {
 
   // Honeypot : un bot remplit souvent tous les champs cachés.
   if (typeof body.website === "string" && body.website.trim() !== "") {
-    return NextResponse.json({ ok: true, id: "ignored" }); // on fait semblant d'accepter
+    // on fait semblant d'accepter (rien n'est enregistré)
+    return NextResponse.json({ ok: true, id: "ignored", ref: "3B-" + Math.random().toString(36).slice(2, 8).toUpperCase() });
   }
 
   // Rate limit : max 5 réservations / 10 min / IP
@@ -89,7 +90,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({ ok: true, id: (data as { id?: string })?.id });
+    const row = data as { id?: string; ref?: string } | null;
+    return NextResponse.json({ ok: true, id: row?.id, ref: row?.ref });
   } catch (e) {
     console.error("book error", e);
     return NextResponse.json(

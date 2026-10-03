@@ -141,10 +141,33 @@ body {
 .glitch::before {
   color: var(--cyan);
   animation: glitch-a 6s infinite steps(1);
+  animation-delay: var(--gd, 0s);
 }
 .glitch::after {
   color: var(--pink);
   animation: glitch-b 6s infinite steps(1);
+  animation-delay: var(--gd, 0s);
+}
+/* Rafale de glitch quand un titre de section apparaît, puis glitch ponctuel */
+[data-reveal].in .glitch::before {
+  animation: glitch-burst-a 0.7s steps(1) 0.25s 1, glitch-a 6s steps(1) calc(var(--gd, 0s) + 1s) infinite;
+}
+[data-reveal].in .glitch::after {
+  animation: glitch-burst-b 0.7s steps(1) 0.25s 1, glitch-b 6s steps(1) calc(var(--gd, 0s) + 1s) infinite;
+}
+@keyframes glitch-burst-a {
+  0% { opacity: 0.9; transform: translate(-6px, 2px); clip-path: inset(8% 0 62% 0); }
+  20% { opacity: 0.9; transform: translate(5px, -1px); clip-path: inset(48% 0 22% 0); }
+  40% { opacity: 0.9; transform: translate(-3px, 0); clip-path: inset(25% 0 50% 0); }
+  60% { opacity: 0.9; transform: translate(4px, 1px); clip-path: inset(70% 0 4% 0); }
+  80%, 100% { opacity: 0; transform: none; clip-path: none; }
+}
+@keyframes glitch-burst-b {
+  0% { opacity: 0.9; transform: translate(6px, -2px); clip-path: inset(60% 0 10% 0); }
+  20% { opacity: 0.9; transform: translate(-5px, 1px); clip-path: inset(12% 0 70% 0); }
+  40% { opacity: 0.9; transform: translate(3px, 0); clip-path: inset(40% 0 35% 0); }
+  60% { opacity: 0.9; transform: translate(-4px, -1px); clip-path: inset(2% 0 80% 0); }
+  80%, 100% { opacity: 0; transform: none; clip-path: none; }
 }
 @keyframes glitch-a {
   0%, 92%, 100% { opacity: 0; transform: none; clip-path: none; }
@@ -390,7 +413,7 @@ body {
 /* ---------- prefers-reduced-motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .ambient i, .grain, .glitch::before, .glitch::after, .pole, .spin-slow, .marquee,
+  .ambient i, .grain, .glitch::before, .glitch::after, [data-reveal].in .glitch::before, [data-reveal].in .glitch::after, .pole, .spin-slow, .marquee,
   .nudge, .swipe-finger, .swipe-trail, .card-glow:hover::before {
     animation: none !important;
   }
@@ -416,4 +439,17 @@ body {
   outline: none;
   border-color: var(--cyan);
   background: rgba(34, 211, 238, 0.04);
+}
+
+/* Ticket de réservation : entrée "impression" */
+.ticket-in {
+  animation: ticket-in 0.9s var(--ease) both;
+}
+@keyframes ticket-in {
+  0% { opacity: 0; transform: translateY(40px) rotate(-2deg) scale(0.96); clip-path: inset(0 0 100% 0 round 28px); }
+  60% { opacity: 1; clip-path: inset(0 0 0 0 round 28px); }
+  100% { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 28px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticket-in { animation: none; }
 }

@@ -11,9 +11,9 @@ export default function Barbers() {
   }
 
   return (
-    <section id="barbers" className="px-4 py-20 sm:px-6 sm:py-28" aria-label="Les barbers">
+    <section id="barbers" className="px-4 py-20 sm:px-6 sm:py-28" aria-label="Les hajema">
       <div className="mx-auto max-w-6xl">
-        <SectionHead n="02" label="L'équipe" title="A5tar" outline="l'barber" sub="Kol wa7ed w style mte3ou. Réservi direct m3a eli t7eb." />
+        <SectionHead n="02" label="L'équipe" title="A5tar" outline="l'hajem" sub="Kol wa7ed w style mte3ou. Réservi direct m3a eli t7eb." />
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {BARBERS.map((b, i) => (
@@ -27,7 +27,7 @@ export default function Barbers() {
                 {b.photo ? (
                   <Image
                     src={b.photo}
-                    alt={`Barber ${b.name}`}
+                    alt={`Hajem ${b.name}`}
                     fill
                     sizes="(min-width: 1024px) 270px, 50vw"
                     className="object-cover grayscale-[35%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"

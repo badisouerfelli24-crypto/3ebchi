@@ -17,7 +17,7 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
-const title = `3ebchi Style 💈 Barbershop Tunis`;
+const title = `3ebchi Style 💈 Hajem Tunis`;
 const description =
   "3EBCHI STYLE 💈 — Coupe propre, style 3ebchi. Barbershop à Tunis. Réservi blastek en ligne : fade, barbe, coupe. Let's shake things up 🔥";
 
@@ -55,6 +55,16 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
+      <head>
+        {/* Ouvrir toujours en haut de page : retire le #section de l'URL avant que
+            le navigateur ne saute dessus, et désactive la restauration du scroll. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{history.scrollRestoration='manual';if(location.hash){history.replaceState(null,'',location.pathname+location.search)}}catch(e){}",
+          }}
+        />
+      </head>
       <body
         className={`${display.variable} ${inter.variable} ${mono.variable} font-body bg-bg text-fg antialiased`}
       >

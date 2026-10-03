@@ -45,8 +45,13 @@ create table if not exists public.bookings (
                  check (status in ('confirmed','done','cancelled')),
   -- Intervalle de temps calculé automatiquement (fuseau Africa/Tunis)
   slot         tstzrange,
+  -- Numéro de réservation unique affiché au client (ex: 3B-K7Q9XM)
+  ref          text,
   created_at   timestamptz not null default now()
 );
+
+alter table public.bookings add column if not exists ref text;
+create unique index if not exists bookings_ref_key on public.bookings (ref);
 
 create index if not exists bookings_barber_date_idx
   on public.bookings (barber, date);
@@ -128,7 +133,11 @@ declare
   v_start timestamptz;
   v_end   timestamptz;
   v_id    uuid;
+  v_ref   text;
   v_block_count integer;
+  -- Alphabet sans caractères ambigus (pas de 0/O ni 1/I)
+  v_chars constant text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  v_try   integer := 0;
 begin
   v_start := ((p_date::text || ' ' || p_start_time::text)::timestamp
               at time zone 'Africa/Tunis');
@@ -151,20 +160,32 @@ begin
 
   -- 2) Insertion. La contrainte d'exclusion gère la concurrence :
   --    si un autre client réserve le même créneau en même temps -> exception.
-  begin
-    insert into public.bookings
-      (barber, service, price, duration_min, date, start_time,
-       client_name, phone, note, status)
-    values
-      (p_barber, p_service, p_price, p_duration_min, p_date, p_start_time,
-       p_client_name, p_phone, coalesce(p_note, ''), 'confirmed')
-    returning id into v_id;
-  exception
-    when exclusion_violation then
-      raise exception 'SLOT_TAKEN' using errcode = 'P0001';
-  end;
+  --    Le numéro `ref` est unique (index UNIQUE) : en cas de collision,
+  --    on en tire un nouveau.
+  loop
+    v_try := v_try + 1;
+    v_ref := '3B-';
+    for i in 1..6 loop
+      v_ref := v_ref || substr(v_chars, 1 + floor(random() * 32)::int, 1);
+    end loop;
+    begin
+      insert into public.bookings
+        (barber, service, price, duration_min, date, start_time,
+         client_name, phone, note, status, ref)
+      values
+        (p_barber, p_service, p_price, p_duration_min, p_date, p_start_time,
+         p_client_name, p_phone, coalesce(p_note, ''), 'confirmed', v_ref)
+      returning id into v_id;
+      exit;
+    exception
+      when exclusion_violation then
+        raise exception 'SLOT_TAKEN' using errcode = 'P0001';
+      when unique_violation then
+        if v_try >= 8 then raise; end if;
+    end;
+  end loop;
 
-  return json_build_object('ok', true, 'id', v_id);
+  return json_build_object('ok', true, 'id', v_id, 'ref', v_ref);
 end;
 $$;
 

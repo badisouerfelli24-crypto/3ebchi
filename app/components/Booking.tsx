@@ -8,11 +8,12 @@ import { isClosedDay } from "@/lib/slots";
 import { normalizeTunisianPhone, isValidName } from "@/lib/validation";
 import { buildIcs } from "@/lib/ics";
 import SectionHead from "./SectionHead";
+import Ticket from "./Ticket";
 
 type Slot = { time: string; available: boolean; reason?: string };
-type SuccessData = { barber: string; service: string; date: string; time: string; durationMin: number };
+type SuccessData = { barber: string; service: string; date: string; time: string; durationMin: number; ref: string; name: string };
 
-const STEPS = ["Barber", "Service", "Nhar", "Wa9t", "Infos", "Confirmi"];
+const STEPS = ["Hajem", "Service", "Nhar", "Wa9t", "Infos", "Confirmi"];
 const DAYS_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
 export default function Booking() {
@@ -100,7 +101,9 @@ export default function Booking() {
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setSuccess({ barber, service, date, time, durationMin: getService(service)!.durationMin });
+        setSuccess({ barber, service, date, time, durationMin: getService(service)!.durationMin, ref: data.ref || "", name: name.trim() });
+        // ramener le ticket à l'écran
+        requestAnimationFrame(() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" }));
         return;
       }
       if (data.code === "SLOT_TAKEN") {
@@ -159,29 +162,43 @@ export default function Booking() {
         <SectionHead n="04" label="Réservation" title="Réservi" outline="blastek" sub="6 étapes, 30 secondes. Confirmation directe." />
 
         {success ? (
-          <div className="card mx-auto max-w-xl px-6 py-12 text-center sm:px-10" data-reveal>
-            <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-cyan via-violet to-pink text-3xl text-black">
-              ✓
+          <div className="mx-auto max-w-md">
+            <div className="mb-6 text-center">
+              <h3 className="display text-5xl">C&apos;est réservé!</h3>
+              <p className="mt-3 text-fg/85">
+                Nchoufek <strong>{labelDate(success.date)}</strong> 3la <strong>{success.time}</strong> m3a{" "}
+                <strong>{getBarber(success.barber)!.name}</strong> 💈
+              </p>
             </div>
-            <h3 className="display mt-6 text-5xl">C&apos;est réservé!</h3>
-            <p className="mt-4 text-lg text-fg/85">
-              Nchoufek <strong>{labelDate(success.date)}</strong> 3la <strong>{success.time}</strong> m3a{" "}
-              <strong>{getBarber(success.barber)!.name}</strong> 💈
-            </p>
-            <div className="mt-8 flex flex-col gap-3">
-              <button onClick={downloadIcs} className="btn btn-primary">
-                📅 Zid l&apos;calendrier
+
+            <Ticket
+              t={{
+                ref: success.ref,
+                name: success.name,
+                hajem: getBarber(success.barber)!.name,
+                hajemPhoto: getBarber(success.barber)!.photo,
+                service: getService(success.service)!.name,
+                price: getService(success.service)!.price,
+                durationMin: success.durationMin,
+                date: success.date,
+                time: success.time,
+              }}
+            />
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <button onClick={downloadIcs} className="btn btn-ghost !px-3 text-sm">
+                📅 Calendrier
               </button>
-              <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
-                📍 Win tal9ana? (Maps)
+              <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost !px-3 text-sm">
+                📍 Maps
               </a>
-              <button onClick={reset} className="mt-2 text-sm text-muted underline underline-offset-4">
-                Réservi marra o5ra
-              </button>
             </div>
+            <button onClick={reset} className="mx-auto mt-5 block text-sm text-muted underline underline-offset-4">
+              Réservi marra o5ra
+            </button>
           </div>
         ) : (
-          <div className="card grid overflow-hidden lg:grid-cols-[280px_1fr]" data-reveal>
+          <div className="card grid overflow-hidden lg:grid-cols-[280px_1fr]">
             {/* Rail de progression */}
             <aside className="border-b border-line p-5 lg:border-b-0 lg:border-r lg:p-7">
               <div className="font-mono text-xs tracking-[0.2em] text-muted">
@@ -232,7 +249,7 @@ export default function Booking() {
             {/* Contenu de l'étape */}
             <div className="p-5 sm:p-8">
               {step === 1 && (
-                <Step title="A5tar l'barber">
+                <Step title="A5tar l'hajem">
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {BARBERS.map((x) => (
                       <Tile key={x.id} selected={barber === x.id} onClick={() => { setBarber(x.id); setStep(service ? 3 : 2); }}>
@@ -369,7 +386,7 @@ export default function Booking() {
               {step === 6 && (
                 <Step title="Confirmi" onBack={() => setStep(5)}>
                   <dl className="divide-y divide-line rounded-2xl border border-line">
-                    <Row k="Barber" v={b?.name} />
+                    <Row k="Hajem" v={b?.name} />
                     <Row k="Service" v={`${svc?.name} — ${svc?.price} DT`} />
                     <Row k="Nhar" v={labelDate(date)} />
                     <Row k="Wa9t" v={time} />

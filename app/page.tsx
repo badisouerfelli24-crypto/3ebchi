@@ -10,6 +10,7 @@ import Location from "./components/Location";
 import Footer from "./components/Footer";
 import FloatingCTA from "./components/FloatingCTA";
 import RevealRoot from "./components/RevealRoot";
+import ScrollManager from "./components/ScrollManager";
 
 export default function Home() {
   return (
@@ -36,6 +37,7 @@ export default function Home() {
       </div>
       <FloatingCTA />
       <RevealRoot />
+      <ScrollManager />
     </>
   );
 }
