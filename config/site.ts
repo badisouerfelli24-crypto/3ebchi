@@ -74,6 +74,10 @@ export const BOOKING_WINDOW_DAYS = 14;
 // name      : nom affiché.
 // tagline   : petite punchline Darija.
 // isOwner   : true pour 3ebchi (accès "tous les barbiers" + stats).
+// photo     : chemin de la photo (dans /public). Laisser vide/undefined =>
+//             affiche les initiales à la place. Pour ajouter une photo :
+//             mets le fichier dans public/barbers/<id>.jpg puis renseigne
+//             photo: "/barbers/<id>.jpg".
 // Le PIN de chaque barbier n'est PAS ici : il est haché et stocké en BDD /
 // variable d'env (voir README + scripts/hash-pin.ts).
 export type Barber = {
@@ -81,13 +85,14 @@ export type Barber = {
   name: string;
   tagline: string;
   isOwner?: boolean;
+  photo?: string;
 };
 
 export const BARBERS: Barber[] = [
-  { id: "3ebchi", name: "3EBCHI", tagline: "El King 🦍 — fondateur", isOwner: true },
-  { id: "achref", name: "ACHREF", tagline: "Fade spécialiste" },
-  { id: "brag", name: "BRAG", tagline: "Style w precision" },
-  { id: "imed", name: "IMED", tagline: "Barbe w contours" },
+  { id: "3ebchi", name: "3EBCHI", tagline: "El King 🦍 — fondateur", isOwner: true, photo: "/barbers/3ebchi.jpg" },
+  { id: "achref", name: "ACHREF", tagline: "Fade spécialiste", photo: "/barbers/achref.jpg" },
+  { id: "brag", name: "BRAG", tagline: "Style w precision", photo: "/barbers/brag.jpg" },
+  { id: "imed", name: "IMED", tagline: "Barbe w contours" }, // photo à ajouter plus tard
 ];
 
 // -------------------------------------------------------------------------

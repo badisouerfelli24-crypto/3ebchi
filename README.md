@@ -20,7 +20,7 @@ Stack : **Next.js (App Router) + TypeScript + Tailwind + Supabase**. Déployable
 | **Les horaires d'ouverture** (jours fermés, heures) | `HOURS` |
 | **La durée d'un créneau** (30 min par défaut) | `SLOT_MINUTES` |
 | Combien de jours à l'avance on peut réserver | `BOOKING_WINDOW_DAYS` |
-| **Les barbiers** (nom, punchline) | `BARBERS` |
+| **Les barbiers** (nom, punchline, photo) | `BARBERS` |
 | **Les services et les prix** | `SERVICES` |
 | **Les vidéos TikTok** affichées | `VIDEOS` |
 
@@ -41,6 +41,15 @@ En production : **re-déployer** (un `git push` suffit si connecté à Vercel).
 // Ajouter une vidéo TikTok :
 { title: "Nouvelle coupe 🔥", views: "5K views", url: "https://www.tiktok.com/@abdouabidi8/video/XXXX" },
 ```
+
+### Ajouter / changer la photo d'un barbier
+
+1. Mets le fichier dans `public/barbers/` (ex : `public/barbers/imed.jpg`).
+2. Dans `config/site.ts`, ajoute `photo` au barbier :
+   ```ts
+   { id: "imed", name: "IMED", tagline: "Barbe w contours", photo: "/barbers/imed.jpg" },
+   ```
+   Sans `photo`, la carte affiche les **initiales** du barbier (fallback).
 
 ---
 
