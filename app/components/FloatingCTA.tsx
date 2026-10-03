@@ -15,7 +15,8 @@ export default function FloatingCTA() {
     }, { threshold: 0.15 });
     if (booking) io.observe(booking);
     function update() {
-      setShow(window.scrollY > window.innerHeight * 0.8 && !bookingVisible);
+      const intro = document.getElementById("intro")?.offsetHeight ?? 0; // pas pendant l'intro
+      setShow(window.scrollY > intro + window.innerHeight * 0.8 && !bookingVisible);
     }
     window.addEventListener("scroll", update, { passive: true });
     update();

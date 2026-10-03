@@ -1,4 +1,5 @@
 import Nav from "./components/Nav";
+import CinematicIntro from "./components/CinematicIntro";
 import Hero from "./components/Hero";
 import Marquee from "./components/Marquee";
 import Stats from "./components/Stats";
@@ -22,6 +23,7 @@ export default function Home() {
       </div>
       <div className="grain" aria-hidden />
       <Nav />
+      <CinematicIntro />
       <main className="page">
         <Hero />
         <Marquee />
