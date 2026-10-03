@@ -1,0 +1,175 @@
+:root{--ink:#0d0d0d;--spray:#f5e400;--hot:#ff2e2e;--chalk:#f2f2f2}
+/* Styles de la version 1 (graffiti), limités à /v1 via .v1-root */
+
+
+
+.v1-root {
+  min-height: 100vh;
+  color: var(--chalk);
+  position: relative;
+  /* Fond béton/brique sombre : dégradés + bruit + taches de peinture */
+  background-color: var(--ink);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(245, 228, 0, 0.06), transparent 35%),
+    radial-gradient(circle at 85% 10%, rgba(255, 46, 46, 0.07), transparent 40%),
+    radial-gradient(circle at 70% 85%, rgba(245, 228, 0, 0.05), transparent 45%),
+    linear-gradient(180deg, #111 0%, #0d0d0d 60%, #0a0a0a 100%);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+/* Texture bruit (grain béton) en overlay */
+.v1-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* Mur de brique subtil */
+.v1-root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.04;
+  background-image:
+    linear-gradient(#fff 1px, transparent 1px),
+    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 120px 46px, 60px 46px;
+}
+
+.v1-root main,
+.v1-root header,
+.v1-root footer,
+.v1-root section {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Composants graffiti réutilisables ---------- */
+
+/* Trait de surlignage tagué (sous les titres) */
+.v1-root .tag-underline {
+  position: relative;
+  display: inline-block;
+}
+.v1-root .tag-underline::after {
+  content: "";
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: -0.15em;
+  height: 0.22em;
+  background: var(--hot);
+  transform: rotate(-1.2deg) skewX(-10deg);
+  border-radius: 2px;
+  opacity: 0.9;
+}
+
+/* Sticker (badge autocollant penché) */
+.v1-root .sticker {
+  display: inline-block;
+  transform: rotate(-3deg);
+  background: var(--spray);
+  color: var(--ink);
+  font-family: var(--font-bebas), sans-serif;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6);
+  text-transform: uppercase;
+}
+
+/* Carte "scotch" (tape-strip en haut) */
+.v1-root .tape-card {
+  position: relative;
+  background: #151515;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.v1-root .tape-card::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 90px;
+  height: 22px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: rgba(245, 228, 0, 0.75);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Texte contour géant en fond de section "3EBCHI" */
+.v1-root .outline-ghost {
+  font-family: var(--font-marker), cursive;
+  color: transparent;
+  -webkit-text-stroke: 2px rgba(255, 255, 255, 0.06);
+  text-stroke: 2px rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+  user-select: none;
+  line-height: 0.9;
+}
+
+/* Barber-pole divider */
+.v1-root .barber-pole {
+  height: 10px;
+  width: 100%;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hot) 0 16px,
+    var(--chalk) 16px 32px,
+    var(--ink) 32px 48px
+  );
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Effet "spray dot" au survol des boutons */
+.v1-root .spray-btn {
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.v1-root .spray-btn:hover {
+  transform: translateY(-2px);
+}
+.v1-root .spray-btn:active {
+  transform: translateY(0);
+}
+
+/* Apparition au scroll */
+.v1-root .reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.v1-root .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Focus visible accessible partout */
+.v1-root :focus-visible {
+  outline: 3px solid var(--spray);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Respect de prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .v1-root .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .v1-root .spray-btn:hover {
+    transform: none;
+  }
+  .v1-root * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

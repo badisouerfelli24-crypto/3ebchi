@@ -22,7 +22,7 @@ Stack : **Next.js (App Router) + TypeScript + Tailwind + Supabase**. Déployable
 | Combien de jours à l'avance on peut réserver | `BOOKING_WINDOW_DAYS` |
 | **Les barbiers** (nom, punchline, photo) | `BARBERS` |
 | **Les services et les prix** | `SERVICES` |
-| **Les vidéos TikTok** affichées | `VIDEOS` |
+| **Les reels** (carrousel vidéo) | `VIDEOS` + fichiers dans `public/reels/` |
 
 Après chaque modif : si en local, le site se recharge tout seul (`npm run dev`).
 En production : **re-déployer** (un `git push` suffit si connecté à Vercel).
@@ -41,6 +41,27 @@ En production : **re-déployer** (un `git push` suffit si connecté à Vercel).
 // Ajouter une vidéo TikTok :
 { title: "Nouvelle coupe 🔥", views: "5K views", url: "https://www.tiktok.com/@abdouabidi8/video/XXXX" },
 ```
+
+### Ajouter un reel (vidéo)
+
+Les vidéos sont hébergées **sur le site** (pas d'intégration TikTok) : lecture fluide,
+sans logo ni boutons, aucune vidéo noire ou recadrée.
+
+1. Mets la vidéo dans `public/reels/` (ex : `public/reels/nouvelle-coupe.mp4`) et une
+   image de couverture `public/reels/nouvelle-coupe.jpg`.
+   Conseil : vidéo verticale 9:16, compressée (~1 Mo). Avec ffmpeg :
+   ```bash
+   ffmpeg -i source.mp4 -vf "scale=540:960:force_original_aspect_ratio=increase,crop=540:960" \
+     -c:v libx264 -crf 30 -maxrate 900k -bufsize 1800k -c:a aac -b:a 80k -movflags +faststart public/reels/nouvelle-coupe.mp4
+   ffmpeg -ss 0.8 -i public/reels/nouvelle-coupe.mp4 -frames:v 1 public/reels/nouvelle-coupe.jpg
+   ```
+2. Ajoute une ligne dans `VIDEOS` (`config/site.ts`) avec `src` et `poster`.
+
+### Ancienne version (graffiti)
+
+La première version du site reste accessible sur **`/v1`** (et dans la branche git
+`v1-graffiti`). Pour la remettre en page d'accueil : copier `app/v1/page.tsx` dans
+`app/page.tsx` (et ses composants `app/v1/_components`).
 
 ### Ajouter / changer la photo d'un barbier
 
@@ -80,6 +101,7 @@ table `barbers` de Supabase.
 
 - Va sur **`/barber`** (lien discret « Espace barber 🔒 » en bas du site).
 - Chaque barbier entre **son PIN**.
+- Barbers : 3EBCHI (owner), ACHREF, BRAG, BAFFI (id interne `imed`).
 - Il voit **ses** réservations (aujourd'hui en premier, puis à venir) avec :
   nom du client, téléphone (clic = appel, bouton WhatsApp), service, heure, note.
 - Actions : **✅ Done**, **✖ Annuler** (libère le créneau), **⛔ Bloquer**

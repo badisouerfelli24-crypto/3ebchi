@@ -1,63 +1,61 @@
 import { HOURS, SITE } from "@/config/site";
-import Reveal from "./Reveal";
+import SectionHead from "./SectionHead";
 
 export default function Location() {
-  // Ordre d'affichage : Lundi -> Dimanche
-  const ordered = [1, 2, 3, 4, 5, 6, 0]
-    .map((d) => HOURS.find((h) => h.day === d))
-    .filter(Boolean) as typeof HOURS;
+  const ordered = [1, 2, 3, 4, 5, 6, 0].map((d) => HOURS.find((h) => h.day === d)).filter(Boolean) as typeof HOURS;
 
   return (
-    <section id="location" className="px-5 py-14" aria-label="Adresse et horaires">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8 text-center">
-          <span className="sticker text-base">📍 Win tal9ana?</span>
-          <h2 className="mt-4 font-marker text-4xl text-chalk sm:text-5xl">
-            <span className="tag-underline">Location</span> &amp; horaires
-          </h2>
-        </div>
+    <section id="location" className="px-4 py-20 sm:px-6 sm:py-28" aria-label="Adresse et horaires">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead n="05" label="Location" title="Win" outline="tal9ana?" />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <Reveal className="tape-card flex flex-col justify-center rounded-xl p-6 text-center">
-            <div className="text-5xl">🗺️</div>
-            <p className="mt-4 text-lg text-chalk/90">{SITE.city}</p>
-            <a
-              href={SITE.mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="spray-btn mx-auto mt-5 inline-block rounded-md bg-spray px-6 py-3 font-bebas text-xl tracking-wide text-ink"
-            >
-              Win tal9ana? → Maps
-            </a>
-            <a
-              href={SITE.tiktokUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="spray-btn mx-auto mt-3 inline-block rounded-md border-2 border-chalk/50 px-6 py-3 font-bebas text-xl tracking-wide text-chalk"
-            >
-              Suivi na 3la TikTok {SITE.tiktokHandle} ↗
-            </a>
-          </Reveal>
+        <div className="grid gap-3 md:grid-cols-2">
+          <a
+            href={SITE.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card card-glow group relative flex min-h-[280px] flex-col justify-between overflow-hidden p-6 sm:p-8"
+            data-reveal
+          >
+            {/* grille "carte" stylisée */}
+            <div
+              aria-hidden
+              className="absolute inset-0 opacity-40"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px)",
+                backgroundSize: "28px 28px",
+                maskImage: "radial-gradient(circle at 60% 50%, #000 20%, transparent 75%)",
+              }}
+            />
+            <div aria-hidden className="absolute left-[60%] top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <span className="absolute -inset-6 animate-ping rounded-full bg-cyan/20" />
+              <span className="relative grid h-12 w-12 place-items-center rounded-full bg-cyan text-xl text-black shadow-[0_0_40px_rgba(34,211,238,.6)]">💈</span>
+            </div>
+            <p className="label relative">// {SITE.city}</p>
+            <div className="relative">
+              <div className="display text-4xl sm:text-5xl">Ouvrir Maps</div>
+              <div className="mt-2 inline-flex items-center gap-2 font-semibold text-muted transition-colors group-hover:text-fg">
+                Itinéraire direct <span aria-hidden className="transition-transform group-hover:translate-x-1">↗</span>
+              </div>
+            </div>
+          </a>
 
-          <Reveal className="tape-card rounded-xl p-6">
-            <h3 className="mb-4 font-marker text-2xl text-spray">Horaires</h3>
-            <ul className="divide-y divide-chalk/10">
+          <div className="card p-6 sm:p-8" data-reveal style={{ ["--d" as string]: "90ms" }}>
+            <p className="label">// Horaires</p>
+            <ul className="mt-5 divide-y divide-line">
               {ordered.map((h) => (
-                <li key={h.day} className="flex items-center justify-between py-2">
-                  <span className="font-bebas text-lg tracking-wide text-chalk/80">
-                    {h.label}
-                  </span>
+                <li key={h.day} className="flex items-center justify-between py-3">
+                  <span className="font-semibold">{h.label}</span>
                   {h.closed ? (
-                    <span className="font-bebas text-lg tracking-wide text-hot">Fermé</span>
+                    <span className="rounded-full border border-pole/40 bg-pole/10 px-2.5 py-0.5 font-mono text-xs text-pole">Fermé</span>
                   ) : (
-                    <span className="font-bebas text-lg tracking-wide text-chalk">
-                      {h.open} – {h.close}
-                    </span>
+                    <span className="font-mono text-sm text-fg/85">{h.open} — {h.close}</span>
                   )}
                 </li>
               ))}
             </ul>
-          </Reveal>
+          </div>
         </div>
       </div>
     </section>

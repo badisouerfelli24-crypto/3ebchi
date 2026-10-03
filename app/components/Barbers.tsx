@@ -2,30 +2,7 @@
 
 import Image from "next/image";
 import { BARBERS } from "@/config/site";
-import Reveal from "./Reveal";
-
-/** Avatar : photo si dispo, sinon initiales. */
-function Avatar({ name, photo }: { name: string; photo?: string }) {
-  if (photo) {
-    return (
-      <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border-4 border-spray shadow-[3px_3px_0_rgba(0,0,0,0.6)]">
-        <Image
-          src={photo}
-          alt={`Barber ${name}`}
-          width={96}
-          height={96}
-          className="h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
-  const initials = name.slice(0, 2).toUpperCase();
-  return (
-    <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border-4 border-ink bg-gradient-to-br from-spray to-hot font-marker text-3xl text-ink shadow-[3px_3px_0_rgba(0,0,0,0.6)]">
-      {initials}
-    </div>
-  );
-}
+import SectionHead from "./SectionHead";
 
 export default function Barbers() {
   function pick(id: string) {
@@ -34,35 +11,49 @@ export default function Barbers() {
   }
 
   return (
-    <section id="barbers" className="px-5 py-14" aria-label="Les barbiers">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-10 text-center">
-          <span className="sticker text-base">🦍 L&apos;équipe</span>
-          <h2 className="mt-4 font-marker text-4xl text-chalk sm:text-5xl">
-            <span className="tag-underline">A5tar</span> l&apos;barber mte3ek
-          </h2>
-        </div>
+    <section id="barbers" className="px-4 py-20 sm:px-6 sm:py-28" aria-label="Les barbers">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead n="02" label="L'équipe" title="A5tar" outline="l'barber" sub="Kol wa7ed w style mte3ou. Réservi direct m3a eli t7eb." />
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {BARBERS.map((b, i) => (
-            <Reveal
+            <article
               key={b.id}
-              className="tape-card flex flex-col items-center rounded-xl px-5 pb-6 pt-8 text-center"
+              className="card card-glow group overflow-hidden p-2"
+              data-reveal
+              style={{ ["--d" as string]: `${i * 90}ms` }}
             >
-              <div style={{ transform: `rotate(${i % 2 === 0 ? -2 : 2}deg)` }}>
-                <Avatar name={b.name} photo={b.photo} />
+              <div className="relative aspect-[4/5] overflow-hidden rounded-[16px] bg-surface">
+                {b.photo ? (
+                  <Image
+                    src={b.photo}
+                    alt={`Barber ${b.name}`}
+                    fill
+                    sizes="(min-width: 1024px) 270px, 50vw"
+                    className="object-cover grayscale-[35%] transition-all duration-700 group-hover:scale-105 group-hover:grayscale-0"
+                  />
+                ) : (
+                  <div className="display grid h-full place-items-center text-6xl text-muted">{b.name.slice(0, 2)}</div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/80 to-transparent" />
+                {b.isOwner && (
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 font-mono text-[10px] tracking-[0.15em] text-cyan backdrop-blur">
+                    FOUNDER 🦍
+                  </span>
+                )}
+                <div className="absolute inset-x-0 bottom-0 p-3">
+                  <h3 className="display text-2xl sm:text-3xl">{b.name}</h3>
+                  <p className="mt-1 text-xs text-fg/75 sm:text-sm">{b.tagline}</p>
+                </div>
               </div>
-              <h3 className="mt-4 font-marker text-2xl text-spray">{b.name}</h3>
-              <p className="mt-1 min-h-[2.5rem] text-sm text-chalk/70">
-                {b.tagline}
-              </p>
               <button
                 onClick={() => pick(b.id)}
-                className="spray-btn mt-4 w-full rounded-md bg-hot px-4 py-3 font-bebas text-lg tracking-wide text-chalk"
+                className="mt-2 flex w-full items-center justify-between rounded-[14px] border border-line px-3 py-3 text-left text-sm font-bold transition-colors hover:bg-white hover:text-black"
               >
-                Réservi m3ah 💈
+                Réservi m3ah
+                <span aria-hidden className="transition-transform group-hover:translate-x-1">→</span>
               </button>
-            </Reveal>
+            </article>
           ))}
         </div>
       </div>

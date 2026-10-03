@@ -1,46 +1,56 @@
+"use client";
+
 import { SERVICES } from "@/config/site";
-import Reveal from "./Reveal";
+import SectionHead from "./SectionHead";
+
+// Service mis en avant (badge "Populaire") — change l'id si besoin.
+const POPULAR = "fade";
 
 export default function Services() {
+  function pick(id: string) {
+    window.dispatchEvent(new CustomEvent("select-service", { detail: id }));
+    document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" });
+  }
+
   return (
-    <section id="services" className="px-5 py-14" aria-label="Services et prix">
-      <div className="relative mx-auto max-w-4xl">
-        <div className="pointer-events-none absolute -top-10 right-0 opacity-100">
-          <span className="outline-ghost text-[18vw] leading-none sm:text-[9rem]">
-            PRIX
-          </span>
-        </div>
+    <section id="prix" className="px-4 py-20 sm:px-6 sm:py-28" aria-label="Services et prix">
+      <div className="mx-auto max-w-6xl">
+        <SectionHead n="03" label="Services" title="Chnowa" outline="t7eb?" sub="Prix clairs, sans surprise. Payement fel salon." />
 
-        <div className="relative mb-8 text-center">
-          <span className="sticker text-base">✂️ Services</span>
-          <h2 className="mt-4 font-marker text-4xl text-chalk sm:text-5xl">
-            <span className="tag-underline">Chnowa</span> t7eb ta3mel lyoum?
-          </h2>
+        <div className="card overflow-hidden" data-reveal>
+          <ul className="divide-y divide-line">
+            {SERVICES.map((s) => (
+              <li key={s.id}>
+                <button
+                  onClick={() => pick(s.id)}
+                  className="group flex w-full items-center gap-4 px-5 py-5 text-left transition-colors hover:bg-white/[0.03] sm:px-8 sm:py-6"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-lg font-extrabold sm:text-2xl">{s.name}</span>
+                      {s.id === POPULAR && (
+                        <span className="rounded-full border border-pink/40 bg-pink/10 px-2 py-0.5 font-mono text-[10px] tracking-[0.15em] text-pink">
+                          POPULAIRE
+                        </span>
+                      )}
+                    </div>
+                    <span className="mt-1 inline-block font-mono text-xs text-muted">⏱ {s.durationMin} min</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="display text-3xl sm:text-5xl">{s.price}</span>
+                    <span className="ml-1 font-mono text-xs text-muted">DT</span>
+                  </div>
+                  <span
+                    aria-hidden
+                    className="hidden h-10 w-10 shrink-0 place-items-center rounded-full border border-line transition-all group-hover:border-fg group-hover:bg-fg group-hover:text-black sm:grid"
+                  >
+                    →
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {SERVICES.map((s) => (
-            <Reveal
-              key={s.id}
-              className="tape-card flex items-center justify-between rounded-lg px-5 py-4"
-            >
-              <div>
-                <div className="font-bebas text-2xl tracking-wide text-chalk">
-                  {s.name}
-                </div>
-                <div className="text-sm text-chalk/50">{s.durationMin} min</div>
-              </div>
-              <div className="font-marker text-3xl text-spray">
-                {s.price}
-                <span className="ml-1 text-lg text-hot">DT</span>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-
-        <p className="mt-6 text-center text-sm text-chalk/50">
-          Prix indicatifs · A5tar w réservi blastek en ligne 💈
-        </p>
       </div>
     </section>
   );

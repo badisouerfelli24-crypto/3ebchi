@@ -67,7 +67,7 @@ export default function BarberPage() {
 
   if (checking) {
     return (
-      <main className="flex min-h-screen items-center justify-center text-chalk/60">
+      <main className="flex min-h-screen items-center justify-center text-fg/60">
         Chargement…
       </main>
     );
@@ -123,18 +123,18 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12">
       <div className="mb-6 text-center">
-        <div className="font-marker text-4xl text-spray">Espace barber 🔒</div>
-        <p className="mt-2 text-chalk/60">A5tar esmek w da5el l&apos;PIN</p>
+        <div className="font-display font-black text-4xl text-cyan">Espace barber 🔒</div>
+        <p className="mt-2 text-fg/60">A5tar esmek w da5el l&apos;PIN</p>
       </div>
 
-      <div className="tape-card w-full max-w-sm rounded-xl p-6">
+      <div className="card w-full max-w-sm rounded-xl p-6">
         {!barber ? (
           <div className="grid grid-cols-2 gap-3">
             {BARBERS.map((b) => (
               <button
                 key={b.id}
                 onClick={() => setBarber(b.id)}
-                className="rounded-lg border-2 border-chalk/15 px-4 py-5 font-marker text-xl text-spray hover:border-spray"
+                className="rounded-lg border-2 border-white/15 px-4 py-5 font-display font-black text-xl text-cyan hover:border-cyan"
               >
                 {b.name}
               </button>
@@ -142,9 +142,9 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
           </div>
         ) : (
           <div>
-            <p className="mb-3 text-center text-chalk/80">
-              Barber : <strong className="text-spray">{getBarber(barber)?.name}</strong>{" "}
-              <button onClick={() => { setBarber(""); setPin(""); setError(""); }} className="ml-2 text-sm underline text-chalk/50">
+            <p className="mb-3 text-center text-fg/80">
+              Barber : <strong className="text-cyan">{getBarber(barber)?.name}</strong>{" "}
+              <button onClick={() => { setBarber(""); setPin(""); setError(""); }} className="ml-2 text-sm underline text-fg/50">
                 changer
               </button>
             </p>
@@ -158,14 +158,14 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
               onKeyDown={(e) => e.key === "Enter" && pin.length === 4 && submit()}
               autoFocus
               aria-label="Code PIN 4 chiffres"
-              className="w-full rounded-md border-2 border-chalk/20 bg-ink px-4 py-4 text-center font-marker text-3xl tracking-[0.5em] text-chalk focus:border-spray"
+              className="w-full rounded-md border-2 border-white/20 bg-bg px-4 py-4 text-center font-display font-black text-3xl tracking-[0.5em] text-fg focus:border-cyan"
               placeholder="····"
             />
-            {error && <p className="mt-3 text-center text-hot">{error}</p>}
+            {error && <p className="mt-3 text-center text-pole">{error}</p>}
             <button
               onClick={submit}
               disabled={busy || pin.length !== 4}
-              className="spray-btn mt-4 w-full rounded-md bg-spray px-6 py-3 font-bebas text-xl tracking-wide text-ink disabled:opacity-50"
+              className="mt-4 w-full rounded-md bg-fg px-6 py-3 font-display font-bold text-xl tracking-wide text-black disabled:opacity-50"
             >
               {busy ? "…" : "Daxel"}
             </button>
@@ -173,7 +173,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
         )}
       </div>
 
-      <a href="/" className="mt-6 text-sm text-chalk/40 underline">
+      <a href="/" className="mt-6 text-sm text-fg/40 underline">
         ← Retour au site
       </a>
     </main>
@@ -224,10 +224,10 @@ function Dashboard({
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="font-marker text-3xl text-spray">
+          <div className="font-display font-black text-3xl text-cyan">
             Ahla {data.me.name} 💈
           </div>
-          <p className="text-sm text-chalk/50">
+          <p className="text-sm text-fg/50">
             {viewAll ? "Tous les barbiers" : "Tes réservations"}
           </p>
         </div>
@@ -235,8 +235,8 @@ function Dashboard({
           {data.me.isOwner && (
             <button
               onClick={() => onToggleAll(!viewAll)}
-              className={`rounded-md border-2 px-3 py-2 font-bebas tracking-wide ${
-                viewAll ? "border-spray bg-spray/10 text-spray" : "border-chalk/20 text-chalk/70"
+              className={`rounded-md border-2 px-3 py-2 font-display font-bold tracking-wide ${
+                viewAll ? "border-cyan bg-white/10 text-cyan" : "border-white/20 text-fg/70"
               }`}
             >
               {viewAll ? "👑 Tous" : "👑 Voir tous"}
@@ -244,7 +244,7 @@ function Dashboard({
           )}
           <button
             onClick={logout}
-            className="rounded-md border-2 border-hot px-3 py-2 font-bebas tracking-wide text-hot"
+            className="rounded-md border-2 border-pole px-3 py-2 font-display font-bold tracking-wide text-pole"
           >
             Logout
           </button>
@@ -253,23 +253,23 @@ function Dashboard({
 
       {/* Stats owner */}
       {data.stats && (
-        <div className="tape-card mb-6 rounded-xl p-5">
-          <h2 className="mb-3 font-marker text-xl text-spray">Stats 👑</h2>
+        <div className="card mb-6 rounded-xl p-5">
+          <h2 className="mb-3 font-display font-black text-xl text-cyan">Stats 👑</h2>
           <div className="mb-4 grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-ink/60 p-4 text-center">
-              <div className="font-marker text-3xl text-spray">{data.stats.today}</div>
-              <div className="font-bebas tracking-widest text-chalk/60">AUJOURD&apos;HUI</div>
+            <div className="rounded-lg bg-white/[0.03] p-4 text-center">
+              <div className="font-display font-black text-3xl text-cyan">{data.stats.today}</div>
+              <div className="font-display font-bold tracking-widest text-fg/60">AUJOURD&apos;HUI</div>
             </div>
-            <div className="rounded-lg bg-ink/60 p-4 text-center">
-              <div className="font-marker text-3xl text-spray">{data.stats.week}</div>
-              <div className="font-bebas tracking-widest text-chalk/60">CETTE SEMAINE</div>
+            <div className="rounded-lg bg-white/[0.03] p-4 text-center">
+              <div className="font-display font-black text-3xl text-cyan">{data.stats.week}</div>
+              <div className="font-display font-bold tracking-widest text-fg/60">CETTE SEMAINE</div>
             </div>
           </div>
           <ul className="space-y-1">
             {data.stats.perBarber.map((b) => (
-              <li key={b.id} className="flex justify-between text-chalk/80">
-                <span className="font-bebas tracking-wide">{b.name}</span>
-                <span className="font-marker text-spray">{b.count}</span>
+              <li key={b.id} className="flex justify-between text-fg/80">
+                <span className="font-display font-bold tracking-wide">{b.name}</span>
+                <span className="font-display font-black text-cyan">{b.count}</span>
               </li>
             ))}
           </ul>
@@ -278,12 +278,12 @@ function Dashboard({
 
       {/* Réservations */}
       {days.length === 0 && (
-        <p className="py-10 text-center text-chalk/50">Ma famech réservations 💤</p>
+        <p className="py-10 text-center text-fg/50">Ma famech réservations 💤</p>
       )}
 
       {days.map((d) => (
         <div key={d} className="mb-6">
-          <h2 className="mb-3 font-bebas text-2xl tracking-wide text-chalk">
+          <h2 className="mb-3 font-display font-bold text-2xl tracking-wide text-fg">
             {d === today ? "🔥 Lyoum — " : ""}
             {labelDate(d)}
           </h2>
@@ -304,7 +304,7 @@ function Dashboard({
       {/* Blocages */}
       <BlockManager blocked={data.blocked} reload={reload} showBarber={viewAll} />
 
-      <a href="/" className="mt-8 block text-center text-sm text-chalk/40 underline">
+      <a href="/" className="mt-8 block text-center text-sm text-fg/40 underline">
         ← Retour au site
       </a>
     </main>
@@ -327,25 +327,25 @@ function BookingCard({
   const done = b.status === "done";
 
   return (
-    <div className={`tape-card rounded-lg p-4 ${done ? "opacity-60" : ""}`}>
+    <div className={`card rounded-lg p-4 ${done ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="font-bebas text-2xl tracking-wide text-spray">
+          <div className="font-display font-bold text-2xl tracking-wide text-cyan">
             {b.start_time.slice(0, 5)} · {b.client_name}
           </div>
-          <div className="text-sm text-chalk/70">
+          <div className="text-sm text-fg/70">
             {b.service} · {b.price} DT · {b.duration_min} min
-            {showBarber && <span className="ml-1 text-chalk/40">({b.barber})</span>}
+            {showBarber && <span className="ml-1 text-fg/40">({b.barber})</span>}
           </div>
-          {b.note && <div className="mt-1 text-sm text-chalk/50">📝 {b.note}</div>}
+          {b.note && <div className="mt-1 text-sm text-fg/50">📝 {b.note}</div>}
         </div>
-        {done && <span className="sticker text-xs">✅ done</span>}
+        {done && <span className="chip text-xs">✅ done</span>}
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <a
           href={`tel:${tel}`}
-          className="rounded-md border border-chalk/20 px-3 py-2 text-sm text-chalk hover:border-spray"
+          className="rounded-md border border-white/20 px-3 py-2 text-sm text-fg hover:border-cyan"
         >
           📞 {tel}
         </a>
@@ -361,13 +361,13 @@ function BookingCard({
           <>
             <button
               onClick={onDone}
-              className="rounded-md bg-spray px-3 py-2 text-sm font-bold text-ink"
+              className="rounded-md bg-fg px-3 py-2 text-sm font-bold text-black"
             >
               ✅ Done
             </button>
             <button
               onClick={onCancel}
-              className="rounded-md border border-hot px-3 py-2 text-sm text-hot"
+              className="rounded-md border border-pole px-3 py-2 text-sm text-pole"
             >
               ✖ Annuler
             </button>
@@ -424,21 +424,21 @@ function BlockManager({
   }
 
   return (
-    <div className="tape-card mt-8 rounded-xl p-5">
+    <div className="card mt-8 rounded-xl p-5">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="font-marker text-xl text-spray">Blocages (pause / absence) ⛔</h2>
+        <h2 className="font-display font-black text-xl text-cyan">Blocages (pause / absence) ⛔</h2>
         <button
           onClick={() => setOpen((o) => !o)}
-          className="rounded-md border-2 border-chalk/20 px-3 py-1 font-bebas tracking-wide text-chalk/80"
+          className="rounded-md border-2 border-white/20 px-3 py-1 font-display font-bold tracking-wide text-fg/80"
         >
           {open ? "Fermer" : "+ Bloquer"}
         </button>
       </div>
 
       {open && (
-        <div className="mb-4 space-y-3 rounded-lg bg-ink/50 p-4">
+        <div className="mb-4 space-y-3 rounded-lg bg-white/[0.03] p-4">
           <div>
-            <label className="mb-1 block text-sm text-chalk/60">Nhar</label>
+            <label className="mb-1 block text-sm text-fg/60">Nhar</label>
             <div className="grid grid-cols-4 gap-2">
               {days.map((d) => {
                 const wd = weekdayOf(d);
@@ -448,7 +448,7 @@ function BlockManager({
                     key={d}
                     onClick={() => setDate(d)}
                     className={`rounded-md border-2 px-1 py-2 text-xs ${
-                      date === d ? "border-spray bg-spray/10 text-spray" : "border-chalk/15 text-chalk/70"
+                      date === d ? "border-cyan bg-white/10 text-cyan" : "border-white/15 text-fg/70"
                     }`}
                   >
                     {short} {labelDateShort(d)}
@@ -458,7 +458,7 @@ function BlockManager({
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-chalk/80">
+          <label className="flex items-center gap-2 text-fg/80">
             <input
               type="checkbox"
               checked={fullDay}
@@ -473,14 +473,14 @@ function BlockManager({
                 type="time"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="rounded-md border-2 border-chalk/20 bg-ink px-2 py-2 text-chalk"
+                className="rounded-md border-2 border-white/20 bg-bg px-2 py-2 text-fg"
               />
-              <span className="text-chalk/50">→</span>
+              <span className="text-fg/50">→</span>
               <input
                 type="time"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="rounded-md border-2 border-chalk/20 bg-ink px-2 py-2 text-chalk"
+                className="rounded-md border-2 border-white/20 bg-bg px-2 py-2 text-fg"
               />
             </div>
           )}
@@ -490,13 +490,13 @@ function BlockManager({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="Raison (optionnel)"
-            className="w-full rounded-md border-2 border-chalk/20 bg-ink px-3 py-2 text-chalk"
+            className="w-full rounded-md border-2 border-white/20 bg-bg px-3 py-2 text-fg"
           />
 
           <button
             onClick={create}
             disabled={busy || !date}
-            className="spray-btn w-full rounded-md bg-hot px-4 py-2 font-bebas text-lg tracking-wide text-chalk disabled:opacity-50"
+            className="w-full rounded-md bg-pole px-4 py-2 font-display font-bold text-lg tracking-wide text-fg disabled:opacity-50"
           >
             {busy ? "…" : "Bloquer ce créneau"}
           </button>
@@ -504,25 +504,25 @@ function BlockManager({
       )}
 
       {blocked.length === 0 ? (
-        <p className="text-sm text-chalk/40">Aucun blocage à venir.</p>
+        <p className="text-sm text-fg/40">Aucun blocage à venir.</p>
       ) : (
         <ul className="space-y-2">
           {blocked.map((bl) => (
             <li
               key={bl.id}
-              className="flex items-center justify-between rounded-md bg-ink/50 px-3 py-2"
+              className="flex items-center justify-between rounded-md bg-white/[0.03] px-3 py-2"
             >
-              <span className="text-sm text-chalk/80">
+              <span className="text-sm text-fg/80">
                 {labelDate(bl.date)} ·{" "}
                 {bl.start_time.slice(0, 5) === "00:00" && bl.end_time.slice(0, 5) === "23:59"
                   ? "Journée complète"
                   : `${bl.start_time.slice(0, 5)}–${bl.end_time.slice(0, 5)}`}
                 {bl.reason && ` · ${bl.reason}`}
-                {showBarber && <span className="ml-1 text-chalk/40">({bl.barber})</span>}
+                {showBarber && <span className="ml-1 text-fg/40">({bl.barber})</span>}
               </span>
               <button
                 onClick={() => remove(bl.id)}
-                className="text-sm text-hot underline"
+                className="text-sm text-pole underline"
               >
                 Débloquer
               </button>
