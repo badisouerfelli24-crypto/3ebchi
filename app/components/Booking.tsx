@@ -22,6 +22,8 @@ export default function Booking() {
   const [service, setService] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  // Heure choisie depuis le widget LIVE du hero (validée une fois le service choisi)
+  const [prefTime, setPrefTime] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
@@ -48,15 +50,29 @@ export default function Booking() {
       const id = (e as CustomEvent).detail as string;
       if (!getService(id)) return;
       setService(id);
-      setStep(barber ? 3 : 1);
+      setStep(!barber ? 1 : date && prefTime ? 4 : 3);
+    }
+    // Depuis le widget LIVE : hajem + nhar + wa9t déjà choisis
+    function onPrefill(e: Event) {
+      const d = (e as CustomEvent).detail as { barber: string; date: string; time: string };
+      if (!getBarber(d.barber)) return;
+      setBarber(d.barber);
+      setDate(d.date);
+      setTime("");
+      setSlots([]);
+      setPrefTime(d.time);
+      setFormError("");
+      setStep(service ? 4 : 2);
     }
     window.addEventListener("select-barber", onBarber);
     window.addEventListener("select-service", onService);
+    window.addEventListener("prefill-booking", onPrefill);
     return () => {
       window.removeEventListener("select-barber", onBarber);
       window.removeEventListener("select-service", onService);
+      window.removeEventListener("prefill-booking", onPrefill);
     };
-  }, [barber, service]);
+  }, [barber, service, date, prefTime]);
 
   const loadSlots = useCallback(async () => {
     if (!barber || !service || !date) return;
@@ -78,6 +94,19 @@ export default function Booking() {
   useEffect(() => {
     if (step === 4) loadSlots();
   }, [step, loadSlots]);
+
+  // Heure pré-choisie (widget LIVE) : si elle convient au service -> étape 5
+  useEffect(() => {
+    if (step !== 4 || !prefTime || slotsLoading || slotsError || slots.length === 0) return;
+    const ok = slots.find((s) => s.time === prefTime && s.available);
+    if (ok) {
+      setTime(prefTime);
+      setStep(5);
+    } else {
+      setFormError(`El wa9t ${prefTime} ma ykaffich l'service hedha — a5tar wa9t e5er.`);
+    }
+    setPrefTime("");
+  }, [step, prefTime, slots, slotsLoading, slotsError]);
 
   async function submit() {
     setFormError("");
@@ -271,7 +300,7 @@ export default function Booking() {
                 <Step title="A5tar l'service" onBack={() => setStep(1)}>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {SERVICES.map((s) => (
-                      <Tile key={s.id} selected={service === s.id} onClick={() => { setService(s.id); setStep(3); }}>
+                      <Tile key={s.id} selected={service === s.id} onClick={() => { setService(s.id); setStep(date && prefTime ? 4 : 3); }}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <div className="font-display font-extrabold">{s.name}</div>
@@ -292,7 +321,7 @@ export default function Booking() {
                 <Step title="A5tar nhar" onBack={() => setStep(2)}>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
                     {days.map((d) => (
-                      <Tile key={d} selected={date === d} onClick={() => { setDate(d); setTime(""); setStep(4); }}>
+                      <Tile key={d} selected={date === d} onClick={() => { setDate(d); setTime(""); setPrefTime(""); setSlots([]); setStep(4); }}>
                         <div className="text-center">
                           <div className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted">{DAYS_SHORT[weekdayOf(d)]}</div>
                           <div className="font-display text-2xl font-black">{labelDateShort(d)}</div>

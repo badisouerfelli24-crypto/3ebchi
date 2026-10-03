@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { BARBERS, SITE, STATS } from "@/config/site";
+import LiveSlots from "./LiveSlots";
 
 /** Découpe un mot en lettres animées (apparition décalée). */
 function Split({ text, offset = 0 }: { text: string; offset?: number }) {
@@ -89,40 +90,10 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Composition graphique : barber pole + badge rotatif */}
-        <div className="relative mx-auto h-[380px] w-full max-w-[340px] sm:h-[460px]" aria-hidden>
-          {/* halo */}
-          <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet/20 blur-3xl" />
-
-          {/* barber pole */}
-          <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-            <div className="h-6 w-20 rounded-t-2xl border border-line bg-gradient-to-b from-zinc-300 to-zinc-600" />
-            <div className="pole h-64 w-14 sm:h-80 sm:w-16" />
-            <div className="h-6 w-20 rounded-b-2xl border border-line bg-gradient-to-b from-zinc-600 to-zinc-300" />
-          </div>
-
-          {/* badge circulaire rotatif */}
-          <svg viewBox="0 0 200 200" className="spin-slow absolute -right-2 top-2 h-36 w-36 sm:h-40 sm:w-40">
-            <defs>
-              <path id="circle" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0" />
-            </defs>
-            <circle cx="100" cy="100" r="96" fill="rgba(10,10,11,0.75)" stroke="rgba(255,255,255,0.12)" />
-            <text fill="#f5f5f4" fontSize="15.5" fontWeight="800" letterSpacing="3.2" fontFamily="var(--font-mono)">
-              <textPath href="#circle">HAJEM KING · #3EBCHI_STYLE · TUNIS · </textPath>
-            </text>
-            <text x="100" y="114" textAnchor="middle" fontSize="40">
-              🦍
-            </text>
-          </svg>
-
-          {/* chips flottants */}
-          <div className="card absolute bottom-10 left-0 z-10 !bg-[#141416] px-4 py-3 shadow-2xl sm:bottom-16">
-            <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-cyan">Best reel</div>
-            <div className="font-display text-2xl font-black">{STATS[2]?.value} views</div>
-          </div>
-          <div className="card absolute right-0 top-[55%] z-10 !bg-[#141416] px-3 py-2 shadow-2xl sm:right-2">
-            <div className="text-sm font-bold">✂️ Fade · Taper · Beard</div>
-          </div>
+        {/* Widget LIVE : prochaines places libres de chaque hajem (cliquables) */}
+        <div className="relative mx-auto w-full max-w-[420px]">
+          <div aria-hidden className="absolute -inset-8 -z-10 rounded-full bg-violet/15 blur-3xl" />
+          <LiveSlots />
         </div>
       </div>
     </header>
