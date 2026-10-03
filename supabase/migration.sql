@@ -55,6 +55,7 @@ create index if not exists bookings_barber_date_idx
 create or replace function public.compute_booking_slot()
 returns trigger
 language plpgsql
+set search_path = public
 as $$
 declare
   start_at timestamptz;
@@ -121,6 +122,7 @@ create or replace function public.create_booking(
 )
 returns json
 language plpgsql
+set search_path = public
 as $$
 declare
   v_start timestamptz;
@@ -173,6 +175,11 @@ $$;
 alter table public.barbers       enable row level security;
 alter table public.bookings      enable row level security;
 alter table public.blocked_slots enable row level security;
+
+-- La RPC ne doit être appelable QUE par le serveur (service_role).
+revoke execute on function public.create_booking(text,text,numeric,integer,date,time,text,text,text) from public, anon, authenticated;
+grant  execute on function public.create_booking(text,text,numeric,integer,date,time,text,text,text) to service_role;
+revoke execute on function public.compute_booking_slot() from public, anon, authenticated;
 
 -- (Pas de policy => tout accès anon/public est refusé. Le service_role
 --  contourne la RLS, donc les routes API serveur fonctionnent normalement.)
