@@ -47,29 +47,102 @@ export default function CinematicIntro() {
     const set = desktop ? "d" : "m";
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    /* ---------- chargement progressif des images ---------- */
+    /* ---------- chargement progressif des images ----------
+       Premier affichage : les 18 premières images (début du chapitre 1) + une
+       image-clé toutes les 24 (≈ 35 images) pour que n'importe quelle position
+       ait immédiatement une image proche à afficher. Dès que le visiteur fait
+       défiler l'intro : on charge une fenêtre autour de la position courante
+       (72 images devant dans le sens du défilement, 24 derrière), 6 au plus en
+       parallèle ; les téléchargements devenus lointains (saut rapide) sont
+       annulés. Toutes les images restent atteignables ; un visiteur qui ne fait
+       pas défiler ne télécharge plus les 408 images. */
     const imgs: (HTMLImageElement | null)[] = new Array(FRAMES).fill(null);
+    const status = new Uint8Array(FRAMES); // 0 à charger, 1 en cours, 2 ok, 3 échec définitif
+    const fails = new Uint8Array(FRAMES);
+    const inflight = new Map<number, HTMLImageElement>();
     let alive = true;
     let current = 0;
     let zoom = 1;
-    const order: number[] = [];
-    for (let step = 16; step >= 1; step = step >> 1)
-      for (let i = 0; i < FRAMES; i += step) if (!order.includes(i)) order.push(i); // grossier → fin
-    let cursor = 0;
-    function loadNext() {
-      if (!alive || cursor >= order.length) return;
-      const i = order[cursor++];
+    let engaged = false;
+    let dir = 1;
+    const INITIAL_HEAD = 18;
+    const KEYSTEP = 24;
+    const AHEAD = 72;
+    const BEHIND = 24;
+    const MAX_PARALLEL = 6;
+
+    function wanted(): number {
+      if (status[current] === 0) return current;
+      if (!engaged) {
+        for (let i = 0; i < INITIAL_HEAD; i++) if (status[i] === 0) return i;
+      }
+      for (let i = 0; i < FRAMES; i += KEYSTEP) if (status[i] === 0) return i;
+      if (!engaged) return -1;
+      for (let d = 1; d <= AHEAD; d++) {
+        const a = current + dir * d;
+        if (a >= 0 && a < FRAMES && status[a] === 0) return a;
+        const b = current - dir * d;
+        if (d <= BEHIND && b >= 0 && b < FRAMES && status[b] === 0) return b;
+      }
+      return -1;
+    }
+
+    function inWindow(i: number) {
+      if (i % KEYSTEP === 0) return true;
+      if (!engaged) return i < INITIAL_HEAD;
+      const off = (i - current) * dir;
+      return off >= -BEHIND && off <= AHEAD;
+    }
+
+    function pump() {
+      if (!alive) return;
+      // annule ce qui n'est plus utile après un saut rapide
+      for (const [i, im] of inflight) {
+        if (!inWindow(i)) {
+          im.onload = im.onerror = null;
+          im.src = "";
+          inflight.delete(i);
+          status[i] = 0;
+        }
+      }
+      while (inflight.size < MAX_PARALLEL) {
+        const i = wanted();
+        if (i < 0) break;
+        start(i);
+      }
+    }
+
+    function start(i: number) {
+      status[i] = 1;
       const im = new Image();
       im.decoding = "async";
+      inflight.set(i, im);
       im.onload = () => {
+        if (!alive) return;
+        inflight.delete(i);
+        status[i] = 2;
         imgs[i] = im;
-        if (i === 0 || Math.abs(i - current) < 3) draw();
-        loadNext();
+        if (i === 0 || Math.abs(i - current) < KEYSTEP) draw();
+        pump();
       };
-      im.onerror = () => loadNext();
+      im.onerror = () => {
+        if (!alive) return;
+        inflight.delete(i);
+        fails[i]++;
+        status[i] = fails[i] >= 2 ? 3 : 0; // une nouvelle tentative, puis l'image voisine sert
+        pump();
+      };
       im.src = frameUrl(set, i);
     }
-    for (let k = 0; k < 6; k++) loadNext();
+
+    function setCurrent(i: number) {
+      if (i === current) return;
+      dir = i > current ? 1 : -1;
+      current = i;
+      if (!engaged && i > 0) engaged = true;
+      pump();
+    }
+    pump();
 
     function nearest(i: number) {
       for (let d = 0; d < FRAMES; d++) {
@@ -112,7 +185,7 @@ export default function CinematicIntro() {
       const i = Math.min(N - 1, Math.floor(c));
       const l = c - i;
       const ch = CHAPTERS[i];
-      current = Math.min(FRAMES - 1, Math.round((ch.t0 + l * (ch.t1 - ch.t0)) * FPS));
+      setCurrent(Math.min(FRAMES - 1, Math.round((ch.t0 + l * (ch.t1 - ch.t0)) * FPS)));
 
       // zoom numérique sur les passages de ciseaux (fin d'un chapitre → début du suivant)
       let z = 0;
@@ -162,6 +235,11 @@ export default function CinematicIntro() {
 
     return () => {
       alive = false;
+      for (const im of inflight.values()) {
+        im.onload = im.onerror = null;
+        im.src = "";
+      }
+      inflight.clear();
       window.removeEventListener("resize", resize);
       st.kill();
       if (lenis) {

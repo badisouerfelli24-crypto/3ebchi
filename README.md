@@ -71,32 +71,48 @@ le domaine de production. Il n'est accessible que via :
 
 ### Ajouter / changer la photo d'un barbier
 
-1. Mets le fichier dans `public/barbers/` (ex : `public/barbers/imed.jpg`).
+1. Mets le fichier dans `public/barbers/` (ex : `public/barbers/baffi.jpg`).
 2. Dans `config/site.ts`, ajoute `photo` au barbier :
    ```ts
-   { id: "imed", name: "IMED", tagline: "Barbe w contours", photo: "/barbers/imed.jpg" },
+   { id: "imed", name: "BAFFI", tagline: "Barbe w contours", photo: "/barbers/baffi.jpg" },
    ```
    Sans `photo`, la carte affiche les **initiales** du barbier (fallback).
 
 ---
 
-## 🔐 Changer un PIN de barbier
+## 🔐 Mot de passe des barbiers (remplace l'ancien PIN)
 
-Les PIN **ne sont jamais en clair** : ils sont hachés (bcrypt) et stockés dans la
-table `barbers` de Supabase.
+Depuis la migration `supabase/migrations/20261004120000_security_hardening.sql`,
+l'espace hajem utilise un **mot de passe d'au moins 15 caractères** (une phrase de
+4 mots ou plus est idéale). L'ancien PIN à 4 chiffres n'est plus accepté.
+Le mot de passe n'est **jamais** stocké en clair : seul un hash **scrypt** est en base.
 
-1. Génère le hash :
+1. Sur ton ordinateur :
    ```bash
-   npm run hash-pin 3ebchi 1234
+   npm run set-password -- 3ebchi
    ```
-   (remplace `3ebchi` par l'id du barbier et `1234` par le nouveau PIN à 4 chiffres)
+   Le mot de passe est demandé **masqué**, deux fois (jamais en argument, jamais affiché).
+   Le script ne se connecte à aucune base : il affiche un bloc SQL.
+2. Colle ce bloc dans **Supabase → SQL Editor → Run**. Il enregistre le hash,
+   **déconnecte les anciennes sessions** de ce barbier et lève un éventuel blocage.
+   Le bloc contient un hash : ne le partage pas, efface l'écran ensuite.
+   (Sous Windows, cette commande marche dans PowerShell avec Node ≥ 20.)
 
-2. La commande affiche une requête SQL toute prête, par ex :
-   ```sql
-   update public.barbers set pin_hash = '$2a$10$...' where id = '3ebchi';
-   ```
+Autres opérations (SQL Editor) :
+```sql
+-- déconnecter un barbier partout
+select public.admin_sessions_revoke_all('achref');
+-- désactiver / réactiver un compte (effet immédiat)
+update public.barbers set active = false where id = 'achref';
+-- retirer / donner le rôle propriétaire (il faut AUSSI isOwner dans config/site.ts)
+update public.barbers set is_owner = false where id = '3ebchi';
+-- lever un blocage après trop d'essais
+delete from public.rate_limits where key = 'login:acct:achref';
+```
 
-3. Colle-la dans **Supabase → SQL Editor → Run**. C'est fait ✅
+> L'écran `/barber` est un champ mot de passe (masqué, compatible gestionnaires
+> de mots de passe et copier-coller). Mise en production : suivre
+> `docs/audits/PRODUCTION_READINESS.md`.
 
 > Les identifiants de barbiers (`3ebchi`, `achref`, `brag`, `imed`) doivent
 > correspondre aux `id` dans `config/site.ts` **et** dans la table `barbers`.
@@ -105,8 +121,8 @@ table `barbers` de Supabase.
 
 ## 📅 Voir / gérer les réservations
 
-- Va sur **`/barber`** (lien discret « Espace barber 🔒 » en bas du site).
-- Chaque barbier entre **son PIN**.
+- Va sur **`/barber`** sur l'adresse admin (voir « Accès à l'espace hajem » ; aucun lien public).
+- Chaque barbier entre **son mot de passe**.
 - Barbers : 3EBCHI (owner), ACHREF, BRAG, BAFFI (id interne `imed`).
 - Il voit **ses** réservations (aujourd'hui en premier, puis à venir) avec :
   nom du client, téléphone (clic = appel, bouton WhatsApp), service, heure, note.
@@ -144,7 +160,13 @@ npm run dev
 3. **SQL Editor → New query** : colle **tout** le contenu de
    [`supabase/migration.sql`](supabase/migration.sql) → **Run**.
    Ça crée les tables, la protection anti-double-booking, et les 4 barbiers.
-4. Définis les PIN (voir « Changer un PIN » plus haut) — un `update` par barbier.
+4. Puis colle et exécute **chaque fichier** de [`supabase/migrations/`](supabase/migrations/)
+   dans l'ordre de leur nom (sécurité, sessions, limiteur, réservation v2…).
+5. Étiquette la base (une seule fois, dans le SQL Editor de CE projet) :
+   `insert into public.app_environment (name) values ('production');`
+   (ou `'preview'` / `'development'` selon le projet).
+6. Définis les mots de passe (voir « Mot de passe des barbiers » plus haut).
+7. Vérifie : `select public.release_preflight('pre-deploy');` doit renvoyer `"ok": true`.
 
 > La migration active la **RLS** sans policy publique : personne ne peut lire la
 > base depuis le navigateur. Seul le serveur (service role key) y accède, via les
@@ -160,7 +182,10 @@ Voir [`.env.example`](.env.example).
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé secrète serveur (⚠️ jamais exposée) |
-| `SESSION_SECRET` | Secret pour signer les sessions barbier (≥ 32 car.) |
+| `SESSION_SECRET` | Secret serveur (≥ 32 car.) : clé HMAC des adresses du limiteur |
+| `DATA_ENVIRONMENT` | **Obligatoire partout** : `production`, `preview`, `development` ou `test`. Sur Vercel, **égal** à l'environnement. Doit aussi correspondre à l'étiquette stockée dans la base (`public.app_environment`), sinon le serveur refuse d'accéder à la base (voir `lib/supabase.ts`) |
+| `ADMIN_HOSTS` | Hôtes autorisés pour `/barber` (liste séparée par des virgules). **Obligatoire en production** : un hôte du déploiement de production |
+| `LOGIN_*`, `SESSION_*`, `BOOKING_*` | Optionnels : seuils de sécurité (voir `lib/securityConfig.ts`) |
 
 Générer un `SESSION_SECRET` :
 ```bash
@@ -173,8 +198,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 1. Pousse le code sur GitHub.
 2. Sur [vercel.com](https://vercel.com) → **Add New → Project** → importe le repo.
-3. **Environment Variables** : ajoute les 3 variables ci-dessus
-   (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`).
+3. **Environment Variables** : ajoute les variables ci-dessus **séparément pour
+   Production et Preview** (Preview = sa propre base de test, voir
+   `docs/audits/RELEASE_CHECKLIST.md`).
 4. **Deploy**. Framework détecté automatiquement (Next.js).
 5. Chaque `git push` redéploie le site.
 
@@ -184,15 +210,29 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 - **Anti-double-booking au niveau BDD** : contrainte d'exclusion Postgres
   (`EXCLUDE USING gist`) sur `(barber, intervalle de temps)` pour les
-  réservations `confirmed`. Deux clients ne peuvent pas prendre le même créneau,
-  même simultanément. La création passe par une fonction SQL transactionnelle
-  (`create_booking`).
+  réservations `confirmed`, plus un verrou par barbier partagé avec la pose
+  d'absences. La création passe par `create_booking_v2` (idempotente : un nouvel
+  essai renvoie la même réservation).
+- **Règles côté serveur** : jours/horaires/créneaux exactement ceux du formulaire
+  (fenêtre de 14 jours, grille, heures passées refusées), prix et durée tirés de
+  `config/site.ts`.
 - **Service role key côté serveur uniquement** (routes API / `lib/supabase.ts`
   marqué `server-only`).
-- **PIN** : bcrypt, vérifiés côté serveur, session en **cookie httpOnly signé**,
-  **verrouillage 10 min après 5 essais**.
+- **Connexion** : mot de passe ≥ 15 caractères haché en scrypt ; limite **partagée
+  en base** par compte (5 essais / 15 min, blocage 15→30→60 min max) et par adresse ;
+  refus si la base du limiteur ne répond pas.
+- **Sessions** : jeton aléatoire en cookie `__Host-` httpOnly/Secure/SameSite=Strict,
+  empreinte seule en base ; déconnexion, changement de mot de passe, compte
+  désactivé ou rôle retiré = effet immédiat.
+- **En-têtes** : CSP, anti-iframe, nosniff, HSTS ; pas d'en-tête `X-Powered-By`.
 - **Fuseau horaire** : toute la logique de créneaux est en **`Africa/Tunis`**.
-- **Anti-spam** : honeypot + rate-limit IP sur la réservation.
+- **Anti-spam** : honeypot + limite par adresse réseau partagée en base
+  (6 réservations / 10 min ; les clients d'un même wifi partagent ce quota ; ne
+  bloque pas un spam distribué). Pas de plafond par numéro par défaut (une même
+  personne peut réserver pour sa famille) ; plafond optionnel via
+  `BOOKING_MAX_ACTIVE_PER_PHONE`.
+- **Sauvegardes** : `scripts/db-backup.sh` (bash : WSL sous Windows) ; la
+  restauration est atomique et vérifie les droits avant de valider.
 - **Accessibilité** : labels, focus visibles, contrastes, pas de scroll horizontal,
   `prefers-reduced-motion` respecté.
 
@@ -205,14 +245,15 @@ config/site.ts          → TOUT le contenu éditable
 lib/                    → supabase, auth, slots, time, ics, validation, rateLimit
 app/
   page.tsx              → page d'accueil (toutes les sections)
-  barber/page.tsx       → espace barbier (login PIN + dashboard)
+  barber/page.tsx       → espace barbier (login par mot de passe + dashboard)
+  confidentialite/page.tsx → information sur les données des réservations (faits vérifiés uniquement)
   components/           → Hero, Stats, TikTokGrid, Barbers, Services, Booking, …
   api/
     availability/       → créneaux dispo
     book/               → créer une réservation
     barber/             → login, logout, bookings, action, block
 supabase/migration.sql  → schéma + sécurité BDD
-scripts/hash-pin.ts     → génère les hash de PIN  (npm run hash-pin)
+scripts/set-password.ts → hash d'un mot de passe barbier (npm run set-password -- <id>)
 ```
 
 ---

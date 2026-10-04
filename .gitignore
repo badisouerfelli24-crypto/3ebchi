@@ -31,3 +31,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 .media-src/
+
+# sauvegardes de base (données clients) : jamais dans git
+/backups/
+*.dump

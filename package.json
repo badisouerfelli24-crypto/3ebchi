@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "hash-pin": "tsx scripts/hash-pin.ts"
+    "set-password": "tsx scripts/set-password.ts",
+    "typecheck": "tsc --noEmit",
+    "preflight": "node scripts/release-preflight.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

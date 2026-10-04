@@ -25,23 +25,92 @@ export default function LiveSlots() {
   const [error, setError] = useState(false);
   const card = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const r = await fetch("/api/next-slots", { cache: "no-store" });
-      if (!r.ok) throw new Error();
-      const d = await r.json();
-      setRows(d.hajema);
-      setError(false);
-    } catch {
-      setError(true);
-    }
-  }, []);
+  // Rafraîchissement : toutes les 60 s tant que le widget est réellement visible
+  // (onglet au premier plan, widget à l'écran, réseau disponible). En arrière-plan
+  // ou hors écran : aucune requête. Au retour : une seule mise à jour immédiate si
+  // les données ont plus de 60 s. Erreurs : nouvelle tentative espacée (2, 4, 8…
+  // 10 min max), jamais en rafale. Une seule requête à la fois, réponses périmées ignorées.
+  const runRef = useRef<(force?: boolean) => void>(() => {});
+  const load = useCallback(() => runRef.current(true), []);
 
   useEffect(() => {
-    load();
-    const t = setInterval(load, 60_000); // rafraîchit chaque minute
-    return () => clearInterval(t);
-  }, [load]);
+    const BASE = 60_000;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let ctrl: AbortController | null = null;
+    let seq = 0;
+    let last = 0;
+    let failures = 0;
+    let inView = true;
+    let stopped = false;
+    const active = () => document.visibilityState === "visible" && navigator.onLine !== false && inView;
+
+    function schedule() {
+      clearTimeout(timer);
+      if (stopped || !active()) return;
+      const delay = failures ? Math.min(BASE * 2 ** failures, 10 * BASE) : BASE;
+      timer = setTimeout(() => run(), delay);
+    }
+
+    async function run(force = false) {
+      if (stopped || ctrl) return; // une seule requête en vol
+      if (!force && !active()) return;
+      const my = ++seq;
+      ctrl = new AbortController();
+      const abort = ctrl;
+      const timeout = setTimeout(() => abort.abort(), 15_000);
+      try {
+        const r = await fetch("/api/next-slots", { signal: abort.signal });
+        if (!r.ok) throw new Error();
+        const d = await r.json();
+        if (!stopped && my === seq) {
+          setRows(d.hajema);
+          setError(false);
+        }
+        failures = 0;
+        last = Date.now();
+      } catch {
+        if (!stopped && my === seq) setError(true);
+        failures = Math.min(failures + 1, 4);
+      } finally {
+        clearTimeout(timeout);
+        ctrl = null;
+        schedule();
+      }
+    }
+    runRef.current = run;
+
+    function wake() {
+      if (!active()) {
+        clearTimeout(timer);
+        return;
+      }
+      if (Date.now() - last >= BASE) run();
+      else schedule();
+    }
+
+    const el = card.current?.parentElement;
+    const io = el
+      ? new IntersectionObserver(([e]) => {
+          inView = e.isIntersecting;
+          wake();
+        })
+      : null;
+    if (el && io) io.observe(el);
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("online", wake);
+    window.addEventListener("offline", wake);
+    run(true);
+
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      ctrl?.abort();
+      io?.disconnect();
+      document.removeEventListener("visibilitychange", wake);
+      window.removeEventListener("online", wake);
+      window.removeEventListener("offline", wake);
+    };
+  }, []);
 
   // Légère inclinaison 3D qui suit la souris (desktop uniquement)
   useEffect(() => {

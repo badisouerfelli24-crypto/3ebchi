@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /* L'espace hajem (/barber + ses API) n'est accessible QUE depuis ces adresses.
    Partout ailleurs (site public, domaine de prod) → 404, comme si la page n'existait pas.
-   Pour changer d'adresse : variable d'env ADMIN_HOSTS (liste séparée par des virgules). */
+   Pour changer d'adresse : variable d'env ADMIN_HOSTS (liste séparée par des virgules).
+   ⚠ Ce filtrage n'est PAS une protection : l'accès est protégé par le mot de passe
+   et la session serveur (lib/auth.ts). Depuis la séparation Preview/Production,
+   l'URL de la branche preview utilise la base de PREVIEW : en production,
+   ADMIN_HOSTS doit nommer un hôte de production (voir PRODUCTION_READINESS.md). */
 const ADMIN_HOSTS = (process.env.ADMIN_HOSTS || "3ebchi-style-git-preview-badis4.vercel.app")
   .split(",")
   .map((h) => h.trim().toLowerCase())

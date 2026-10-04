@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { BARBERS, getBarber } from "@/config/site";
 import { labelDate, todayTunis, nextDays, labelDateShort, weekdayOf } from "@/lib/time";
 import { isClosedDay } from "@/lib/slots";
+import { PASSWORD_MIN_LENGTH } from "@/lib/securityConfig";
 
 type Booking = {
   id: string;
@@ -42,6 +43,26 @@ type Data = {
   blocked: Blocked[];
   stats: Stats | null;
 };
+
+/* Envoie une action admin et signale l'échec au lieu de l'ignorer (session
+   expirée => retour à l'écran de connexion ; autre échec => message existant). */
+async function adminSend(url: string, init: RequestInit): Promise<boolean> {
+  try {
+    const res = await fetch(url, init);
+    if (res.status === 401) {
+      location.reload();
+      return false;
+    }
+    if (!res.ok) {
+      alert("Mochkla. 3awed essaye.");
+      return false;
+    }
+    return true;
+  } catch {
+    alert("Mochkla. 3awed essaye.");
+    return false;
+  }
+}
 
 export default function BarberPage() {
   const [data, setData] = useState<Data | null>(null);
@@ -94,25 +115,31 @@ export default function BarberPage() {
 /* ============================ LOGIN ============================ */
 function Login({ onSuccess }: { onSuccess: () => void }) {
   const [barber, setBarber] = useState<string>("");
-  const [pin, setPin] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function submit() {
+  // Même règle que la politique serveur (lib/password.ts) : longueur en
+  // caractères Unicode. Le serveur reste seul juge ; ceci évite juste un envoi inutile.
+  const longEnough = [...password].length >= PASSWORD_MIN_LENGTH;
+
+  async function submit(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (busy || !longEnough) return;
     setError("");
     setBusy(true);
     try {
       const res = await fetch("/api/barber/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ barber, pin }),
+        body: JSON.stringify({ barber, password }),
       });
       const d = await res.json();
       if (res.ok && d.ok) {
         onSuccess();
       } else {
         setError(d.message || "Erreur");
-        setPin("");
+        setPassword("");
       }
     } catch {
       setError("Mochkla réseau");
@@ -125,7 +152,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
     <main className="flex min-h-screen flex-col items-center justify-center px-5 py-12">
       <div className="mb-6 text-center">
         <div className="font-display font-black text-4xl text-cyan">Espace hajem 🔒</div>
-        <p className="mt-2 text-fg/60">A5tar esmek w da5el l&apos;PIN</p>
+        <p className="mt-2 text-fg/60">A5tar esmek w da5el mot de passe mte3ek</p>
       </div>
 
       <div className="card w-full max-w-sm rounded-xl p-6">
@@ -142,35 +169,36 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
             ))}
           </div>
         ) : (
-          <div>
+          <form onSubmit={submit}>
             <p className="mb-3 text-center text-fg/80">
               Barber : <strong className="text-cyan">{getBarber(barber)?.name}</strong>{" "}
-              <button onClick={() => { setBarber(""); setPin(""); setError(""); }} className="ml-2 text-sm underline text-fg/50">
+              <button type="button" onClick={() => { setBarber(""); setPassword(""); setError(""); }} className="ml-2 text-sm underline text-fg/50">
                 changer
               </button>
             </p>
+            {/* Identifiant invisible : permet aux gestionnaires de mots de passe
+                d'associer le mot de passe au bon compte. */}
+            <input type="text" name="username" autoComplete="username" value={barber} readOnly hidden />
             <input
               type="password"
-              inputMode="numeric"
-              pattern="\d*"
-              maxLength={4}
-              value={pin}
-              onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              onKeyDown={(e) => e.key === "Enter" && pin.length === 4 && submit()}
+              name="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               autoFocus
-              aria-label="Code PIN 4 chiffres"
-              className="w-full rounded-md border-2 border-white/20 bg-bg px-4 py-4 text-center font-display font-black text-3xl tracking-[0.5em] text-fg focus:border-cyan"
-              placeholder="····"
+              aria-label="Mot de passe (15 caractères minimum)"
+              className="w-full rounded-md border-2 border-white/20 bg-bg px-4 py-4 text-center font-display font-black text-xl tracking-[0.15em] text-fg focus:border-cyan"
+              placeholder="Mot de passe"
             />
             {error && <p className="mt-3 text-center text-pole">{error}</p>}
             <button
-              onClick={submit}
-              disabled={busy || pin.length !== 4}
+              type="submit"
+              disabled={busy || !longEnough}
               className="mt-4 w-full rounded-md bg-fg px-6 py-3 font-display font-bold text-xl tracking-wide text-black disabled:opacity-50"
             >
               {busy ? "…" : "Daxel"}
             </button>
-          </div>
+          </form>
         )}
       </div>
 
@@ -199,16 +227,20 @@ function Dashboard({
     if (action === "cancel" && !confirm("Annuler cette réservation ? Le créneau sera libéré.")) {
       return;
     }
-    await fetch("/api/barber/action", {
+    await adminSend("/api/barber/action", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
     });
-    reload();
+    reload(); // affiche l'état réel, réussite ou non
   }
 
   async function logout() {
-    await fetch("/api/barber/logout", { method: "POST" });
+    try {
+      await fetch("/api/barber/logout", { method: "POST" });
+    } catch {
+      // le cookie de session reste invalide côté navigateur au rechargement suivant
+    }
     location.reload();
   }
 
@@ -402,7 +434,7 @@ function BlockManager({
   async function create() {
     if (!date) return;
     setBusy(true);
-    await fetch("/api/barber/block", {
+    const ok = await adminSend("/api/barber/block", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -414,6 +446,7 @@ function BlockManager({
       }),
     });
     setBusy(false);
+    if (!ok) return; // garde le formulaire rempli pour réessayer
     setDate("");
     setReason("");
     setOpen(false);
@@ -421,7 +454,7 @@ function BlockManager({
   }
 
   async function remove(id: string) {
-    await fetch(`/api/barber/block?id=${id}`, { method: "DELETE" });
+    await adminSend(`/api/barber/block?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     reload();
   }
 

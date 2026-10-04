@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { verifySessionToken, SESSION_COOKIE } from "@/lib/auth";
-import { getBarber, isOwner, BARBERS } from "@/config/site";
+import { getSession } from "@/lib/auth";
+import { getBarber, BARBERS } from "@/config/site";
 import { todayTunis, nextDays } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
+const NO_STORE = { "Cache-Control": "no-store, private" };
+
 export async function GET(req: NextRequest) {
-  const token = req.cookies.get(SESSION_COOKIE)?.value;
-  const sessionBarber = verifySessionToken(token);
-  if (!sessionBarber) {
-    return NextResponse.json({ ok: false, message: "Non authentifié" }, { status: 401 });
+  // Session vérifiée en base à chaque requête (révocation immédiate).
+  const session = await getSession(req);
+  if (!session) {
+    return NextResponse.json({ ok: false, message: "Non authentifié" }, { status: 401, headers: NO_STORE });
   }
-  const me = getBarber(sessionBarber);
-  if (!me) {
-    return NextResponse.json({ ok: false, message: "Barber inconnu" }, { status: 401 });
-  }
+  const sessionBarber = session.barberId;
+  const me = getBarber(sessionBarber)!;
 
   const { searchParams } = new URL(req.url);
-  const wantAll = searchParams.get("all") === "1" && isOwner(sessionBarber);
+  // "Tous les hajema" : réservé au propriétaire (rôle relu en base à chaque requête).
+  const wantAll = searchParams.get("all") === "1" && session.isOwner;
 
   try {
     const sb = supabaseAdmin();
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     // Stats (owner uniquement)
     let stats = null;
-    if (isOwner(sessionBarber)) {
+    if (session.isOwner) {
       const weekDays = nextDays(7);
       const weekStart = weekDays[0];
       const weekEnd = weekDays[weekDays.length - 1];
@@ -81,16 +82,19 @@ export async function GET(req: NextRequest) {
       };
     }
 
-    return NextResponse.json({
-      ok: true,
-      me: { id: me.id, name: me.name, isOwner: !!me.isOwner },
-      viewingAll: wantAll,
-      bookings: bookingsRes.data || [],
-      blocked: blockedRes.data || [],
-      stats,
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        me: { id: me.id, name: me.name, isOwner: session.isOwner },
+        viewingAll: wantAll,
+        bookings: bookingsRes.data || [],
+        blocked: blockedRes.data || [],
+        stats,
+      },
+      { headers: NO_STORE }
+    );
   } catch (e) {
-    console.error("bookings error", e);
-    return NextResponse.json({ ok: false, message: "Erreur serveur" }, { status: 500 });
+    console.error("bookings error", e instanceof Error ? e.name : "unknown");
+    return NextResponse.json({ ok: false, message: "Erreur serveur" }, { status: 500, headers: NO_STORE });
   }
 }

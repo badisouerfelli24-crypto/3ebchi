@@ -18,6 +18,7 @@ export default function Footer() {
           <div className="flex flex-wrap gap-5 text-sm font-semibold text-muted">
             <a href={SITE.tiktokUrl} target="_blank" rel="noopener noreferrer" className="hover:text-fg">TikTok ↗</a>
             <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:text-fg">Maps ↗</a>
+            <a href="/confidentialite" className="hover:text-fg">Confidentialité</a>
           </div>
         </div>
         <p className="mt-8 font-mono text-xs text-muted/60">© {year} {SITE.name}</p>

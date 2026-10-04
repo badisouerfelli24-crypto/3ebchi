@@ -62,9 +62,16 @@ export async function GET() {
       return { barber: h.id, slots };
     });
 
-    return NextResponse.json({ hajema: result, at: new Date().toISOString() });
+    // Données publiques identiques pour tous (aucune donnée client) : courte mise
+    // en cache CDN partagée. 30 s + 30 s de revalidation en arrière-plan, donc
+    // au plus ~1 min de retard sur un widget rafraîchi chaque minute. La
+    // réservation reste vérifiée en base au moment de confirmer.
+    return NextResponse.json(
+      { hajema: result, at: new Date().toISOString() },
+      { headers: { "Cache-Control": "public, max-age=0, s-maxage=30, stale-while-revalidate=30" } }
+    );
   } catch (e) {
-    console.error("next-slots error", e);
-    return NextResponse.json({ message: "Erreur serveur" }, { status: 500 });
+    console.error("next-slots error", e instanceof Error ? e.name : "unknown");
+    return NextResponse.json({ message: "Erreur serveur" }, { status: 500, headers: { "Cache-Control": "no-store" } });
   }
 }

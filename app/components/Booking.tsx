@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BARBERS, SERVICES, SITE, BOOKING_WINDOW_DAYS, getBarber, getService } from "@/config/site";
 import { nextDays, labelDate, labelDateShort, weekdayOf } from "@/lib/time";
@@ -12,6 +12,16 @@ import Ticket from "./Ticket";
 
 type Slot = { time: string; available: boolean; reason?: string };
 type SuccessData = { barber: string; service: string; date: string; time: string; durationMin: number; ref: string; name: string };
+
+/** UUID v4 (repli pour les anciens navigateurs sans crypto.randomUUID). */
+function newRequestKey(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
 
 const STEPS = ["Hajem", "Service", "Nhar", "Wa9t", "Infos", "Confirmi"];
 const DAYS_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
@@ -37,6 +47,10 @@ export default function Booking() {
   const [success, setSuccess] = useState<SuccessData | null>(null);
 
   const days = useMemo(() => nextDays(BOOKING_WINDOW_DAYS).filter((d) => !isClosedDay(d)), []);
+  // Clé d'idempotence : la même tentative (mêmes infos) garde la même clé, donc
+  // un nouvel essai après une coupure réseau renvoie la MÊME réservation au lieu
+  // d'en créer une deuxième ou d'afficher "créneau pris" pour sa propre résa.
+  const attempt = useRef<{ sig: string; key: string } | null>(null);
 
   // Raccourcis depuis les cartes Barbers / Services
   useEffect(() => {
@@ -122,11 +136,19 @@ export default function Booking() {
       return;
     }
     setSubmitting(true);
+    const payload = { barber, service, date, time, name: name.trim(), phone: normPhone, note: note.trim() };
+    const sig = JSON.stringify(payload);
+    if (!attempt.current || attempt.current.sig !== sig) {
+      attempt.current = { sig, key: newRequestKey() };
+    }
     try {
       const res = await fetch("/api/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ barber, service, date, time, name: name.trim(), phone: normPhone, note: note.trim(), website: honeypot }),
+        body: JSON.stringify({ ...payload, website: honeypot, requestKey: attempt.current.key }),
+        // délai borné : une réponse perdue affiche l'erreur réseau existante ;
+        // réessayer réutilise la même clé (pas de doublon).
+        signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(20_000) : undefined,
       });
       const data = await res.json();
       if (res.ok && data.ok) {
@@ -431,6 +453,10 @@ export default function Booking() {
                   <button onClick={submit} disabled={submitting} className="btn btn-primary mt-6 w-full text-lg disabled:opacity-60">
                     {submitting ? "Jari…" : "Confirmi l'réservation 💈"}
                   </button>
+                  <p className="mt-3 text-center text-xs text-muted">
+                    Tes infos servent uniquement à gérer ce rendez-vous.{" "}
+                    <a href="/confidentialite" className="underline hover:text-fg">Confidentialité</a>
+                  </p>
                 </Step>
               )}
             </div>

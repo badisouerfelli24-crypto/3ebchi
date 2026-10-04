@@ -1,87 +1,161 @@
-/* Authentification des barbiers (espace /barber).
-   - PIN vérifié CÔTÉ SERVEUR, comparé à un hash bcrypt stocké en BDD.
-   - Session = cookie httpOnly signé (HMAC-SHA256 avec SESSION_SECRET).
-   - Verrouillage après 5 échecs pendant 10 minutes.
-   Aucun PIN ni hash n'est envoyé au navigateur. */
+/* Authentification de l'espace hajem (/barber).
+   - Mot de passe fort (≥ 15 caractères) vérifié CÔTÉ SERVEUR contre un hash
+     scrypt (lib/password.ts). L'ancien PIN à 4 chiffres n'est plus accepté.
+   - Limiteur PARTAGÉ en base (par compte ET par adresse), compté avant le
+     hachage : des requêtes parallèles ou plusieurs instances ne le contournent pas.
+     Si la base du limiteur est indisponible : refus (fail closed).
+   - Session OPAQUE : jeton aléatoire de 32 octets dans un cookie httpOnly ;
+     seule son empreinte SHA-256 est stockée (table admin_sessions). Déconnexion,
+     changement de mot de passe, compte désactivé ou rôle retiré => effet
+     immédiat à la requête suivante.
+   - Rôle propriétaire = config/site.ts ET barbers.is_owner en base (les deux). */
 
 import "server-only";
 import crypto from "crypto";
-import bcrypt from "bcryptjs";
+import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getBarber, isOwner as configIsOwner } from "@/config/site";
+import { SECURITY } from "@/lib/securityConfig";
+import { verifyPassword, dummyHash, passwordWithinBounds, HashBusyError } from "@/lib/password";
+import { clientKey } from "@/lib/rateLimit";
 
-export const SESSION_COOKIE = "3ebchi_session";
-const SESSION_TTL_MS = 1000 * 60 * 60 * 8; // 8h
+const PROD = process.env.NODE_ENV === "production";
+/* Préfixe __Host- : cookie lié à l'hôte exact, Secure, Path=/ (non injectable
+   par un sous-domaine). En local http, on garde un nom simple non Secure. */
+export const SESSION_COOKIE = PROD ? "__Host-3ebchi_admin" : "3ebchi_admin";
+const TOKEN_RE = /^[A-Za-z0-9_-]{43}$/;
 
-function secret(): string {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 16) {
-    throw new Error("SESSION_SECRET manquant ou trop court (voir .env.example).");
-  }
-  return s;
+export type Session = { barberId: string; isOwner: boolean };
+
+function sha256(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-// ---------- Session signée ----------
-function sign(payload: string): string {
-  return crypto.createHmac("sha256", secret()).update(payload).digest("base64url");
+function cookieOptions(maxAge: number) {
+  return { httpOnly: true, secure: PROD, sameSite: "strict" as const, path: "/", maxAge };
 }
 
-export function createSessionToken(barberId: string): string {
-  const exp = Date.now() + SESSION_TTL_MS;
-  const payload = `${barberId}.${exp}`;
-  return `${payload}.${sign(payload)}`;
+export function setSessionCookie(res: NextResponse, token: string) {
+  res.cookies.set(SESSION_COOKIE, token, cookieOptions(SECURITY.sessionTtlSecs()));
 }
 
-export function verifySessionToken(token: string | undefined | null): string | null {
+export function clearSessionCookie(res: NextResponse) {
+  res.cookies.set(SESSION_COOKIE, "", cookieOptions(0));
+}
+
+function readToken(req: NextRequest): string | null {
+  const t = req.cookies.get(SESSION_COOKIE)?.value;
+  return t && TOKEN_RE.test(t) ? t : null;
+}
+
+/**
+ * Vérifie la session d'une requête (UN appel base par requête).
+ * Retourne null si absente, expirée, révoquée, inactive, compte désactivé,
+ * mot de passe changé depuis, ou si la base ne répond pas (fail closed).
+ */
+export async function getSession(req: NextRequest): Promise<Session | null> {
+  const token = readToken(req);
   if (!token) return null;
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [barberId, expStr, sig] = parts;
-  const payload = `${barberId}.${expStr}`;
-  const expected = sign(payload);
-  // Comparaison à temps constant
-  if (sig.length !== expected.length) return null;
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
-  if (Date.now() > Number(expStr)) return null;
-  return barberId;
+  try {
+    const { data, error } = await supabaseAdmin().rpc("admin_session_validate", {
+      p_token_hash: sha256(token),
+      p_idle_secs: SECURITY.sessionIdleSecs(),
+      p_touch_secs: SECURITY.sessionTouchSecs(),
+    });
+    if (error || !data) return null;
+    const row = data as { barber: string; is_owner: boolean };
+    if (!getBarber(row.barber)) return null; // retiré de la configuration
+    return { barberId: row.barber, isOwner: !!row.is_owner && configIsOwner(row.barber) };
+  } catch {
+    return null;
+  }
 }
 
-// ---------- Vérification du PIN ----------
-export async function verifyPin(barberId: string, pin: string): Promise<boolean> {
-  if (!/^\d{4}$/.test(pin)) return false;
+export type LoginResult =
+  | { kind: "ok"; token: string }
+  | { kind: "invalid" } // message générique
+  | { kind: "locked"; retryAfter: number }
+  | { kind: "unavailable" }; // limiteur ou base indisponible => refus
+
+/**
+ * Tentative de connexion. Ordre : bornes -> limiteur partagé (compte + adresse,
+ * compté AVANT le hachage) -> vérification scrypt -> création de session.
+ */
+export async function attemptLogin(req: NextRequest, barberId: string, password: unknown): Promise<LoginResult> {
+  const known = !!getBarber(barberId);
+  const ipKey = clientKey(req.headers, "login");
+  const accountKey = known ? `login:acct:${barberId}` : null;
   const sb = supabaseAdmin();
-  const { data, error } = await sb
-    .from("barbers")
-    .select("pin_hash")
-    .eq("id", barberId)
-    .maybeSingle();
-  if (error || !data?.pin_hash) return false;
-  return bcrypt.compare(pin, data.pin_hash);
-}
 
-// ---------- Verrouillage (en mémoire) ----------
-type Attempt = { count: number; lockedUntil: number };
-const attempts = new Map<string, Attempt>();
-const MAX_ATTEMPTS = 5;
-const LOCK_MS = 1000 * 60 * 10; // 10 min
-
-export function isLockedOut(key: string): number {
-  const a = attempts.get(key);
-  if (a && a.lockedUntil > Date.now()) {
-    return Math.ceil((a.lockedUntil - Date.now()) / 1000);
+  let gate: { allowed: boolean; retry_after: number };
+  try {
+    const { data, error } = await sb.rpc("auth_login_begin", {
+      p_account_key: accountKey,
+      p_ip_key: ipKey,
+      p_account_max: SECURITY.loginAccountMax(),
+      p_ip_max: SECURITY.loginIpMax(),
+      p_window_secs: SECURITY.loginWindowSecs(),
+      p_lock_secs: SECURITY.loginLockSecs(),
+      p_lock_max_secs: SECURITY.loginLockMaxSecs(),
+    });
+    if (error || !data) return { kind: "unavailable" };
+    gate = data as { allowed: boolean; retry_after: number };
+  } catch {
+    return { kind: "unavailable" };
   }
-  return 0;
-}
+  if (!gate.allowed) return { kind: "locked", retryAfter: Math.max(1, Number(gate.retry_after) || 60) };
 
-export function recordFailure(key: string): void {
-  const a = attempts.get(key) || { count: 0, lockedUntil: 0 };
-  a.count++;
-  if (a.count >= MAX_ATTEMPTS) {
-    a.lockedUntil = Date.now() + LOCK_MS;
-    a.count = 0;
+  // Comptes inconnus : la liste des comptes est publique (écran de connexion),
+  // on refuse sans hacher (aucun coût CPU exploitable).
+  if (!known || !passwordWithinBounds(password)) return { kind: "invalid" };
+
+  let stored: string | null = null;
+  let active = false;
+  try {
+    const { data, error } = await sb.from("barbers").select("password_hash, active").eq("id", barberId).limit(1);
+    if (error) return { kind: "unavailable" };
+    const row = (data || [])[0] as { password_hash: string | null; active: boolean } | undefined;
+    stored = row?.password_hash ?? null;
+    active = !!row?.active;
+  } catch {
+    return { kind: "unavailable" };
   }
-  attempts.set(key, a);
+
+  // Compte connu sans mot de passe / désactivé : on hache quand même (temps comparable).
+  let ok: boolean;
+  try {
+    ok = await verifyPassword(password, stored && active ? stored : await dummyHash());
+  } catch (e) {
+    if (e instanceof HashBusyError) return { kind: "unavailable" }; // trop de calculs simultanés
+    throw e;
+  }
+  if (!ok || !stored || !active) return { kind: "invalid" };
+
+  const token = crypto.randomBytes(32).toString("base64url");
+  const previous = readToken(req);
+  try {
+    const { error } = await sb.rpc("admin_session_create", {
+      p_barber: barberId,
+      p_token_hash: sha256(token),
+      p_ttl_secs: SECURITY.sessionTtlSecs(),
+      p_previous_token_hash: previous ? sha256(previous) : null,
+      p_account_key: accountKey,
+      p_ip_key: ipKey,
+    });
+    if (error) return { kind: "unavailable" };
+  } catch {
+    return { kind: "unavailable" };
+  }
+  return { kind: "ok", token };
 }
 
-export function clearFailures(key: string): void {
-  attempts.delete(key);
+/** Révoque la session présentée (déconnexion réelle côté serveur). */
+export async function revokeSession(req: NextRequest): Promise<void> {
+  const token = readToken(req);
+  if (!token) return;
+  try {
+    await supabaseAdmin().rpc("admin_session_revoke", { p_token_hash: sha256(token) });
+  } catch {
+    // le cookie est effacé de toute façon ; l'échec est journalisé par l'appelant
+  }
 }

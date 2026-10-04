@@ -3,8 +3,11 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { getBarber, getService } from "@/config/site";
 import { generateSlots, shouldHidePast, type Interval } from "@/lib/slots";
 import { toMinutes } from "@/lib/time";
+import { parseIsoDate, isBookableDate } from "@/lib/bookingRules";
 
 export const dynamic = "force-dynamic";
+
+const NO_STORE = { "Cache-Control": "no-store" };
 
 /** "HH:MM:SS" ou "HH:MM" -> minutes depuis minuit. */
 function timeToMin(t: string): number {
@@ -14,18 +17,19 @@ function timeToMin(t: string): number {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const barber = searchParams.get("barber") || "";
-  const date = searchParams.get("date") || "";
+  const date = parseIsoDate(searchParams.get("date") || "");
   const serviceId = searchParams.get("service") || "";
 
   if (!getBarber(barber)) {
-    return NextResponse.json({ message: "Barber inconnu" }, { status: 400 });
+    return NextResponse.json({ message: "Barber inconnu" }, { status: 400, headers: NO_STORE });
   }
   const service = getService(serviceId);
   if (!service) {
-    return NextResponse.json({ message: "Service inconnu" }, { status: 400 });
+    return NextResponse.json({ message: "Service inconnu" }, { status: 400, headers: NO_STORE });
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return NextResponse.json({ message: "Date invalide" }, { status: 400 });
+  // Date réelle et dans la fenêtre proposée par le formulaire (pas de requêtes sur 2099).
+  if (!date || !isBookableDate(date)) {
+    return NextResponse.json({ message: "Date invalide" }, { status: 400, headers: NO_STORE });
   }
 
   try {
@@ -60,19 +64,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    const slots = generateSlots(
-      date,
-      service.durationMin,
-      busy,
-      shouldHidePast(date)
-    );
+    const slots = generateSlots(date, service.durationMin, busy, shouldHidePast(date));
 
-    return NextResponse.json({ slots });
+    // Toujours frais : la disponibilité affichée n'est qu'indicative, la base
+    // reste l'autorité au moment de réserver.
+    return NextResponse.json({ slots }, { headers: NO_STORE });
   } catch (e) {
-    console.error("availability error", e);
-    return NextResponse.json(
-      { message: "Erreur serveur" },
-      { status: 500 }
-    );
+    console.error("availability error", e instanceof Error ? e.name : "unknown");
+    return NextResponse.json({ message: "Erreur serveur" }, { status: 500, headers: NO_STORE });
   }
 }
