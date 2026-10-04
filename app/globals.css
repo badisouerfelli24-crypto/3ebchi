@@ -494,6 +494,7 @@ html.lenis body {
 .cine {
   position: relative;
   height: 600vh; /* 1 écran de scène + 5 chapitres */
+  height: 600svh; /* stable même si la barre du navigateur apparaît/disparaît ; figé en px par CinematicIntro */
   background: #000;
 }
 .cine-stage {

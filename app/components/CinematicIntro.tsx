@@ -79,7 +79,22 @@ export default function CinematicIntro() {
       return null;
     }
 
+    /* Hauteur de l'intro FIGÉE en pixels (6 écrans), recalculée seulement si la
+       largeur change (rotation). Avec "600vh", la hauteur suivait la barre
+       d'outils qui apparaît/disparaît pendant le défilement (navigateurs
+       intégrés comme Messenger/Instagram, certains iPhone) : l'intro grandissait
+       ou rétrécissait de ~300 px et tout le site en dessous sautait. */
+    let lockedWidth = 0;
+    function lockHeight() {
+      if (window.innerWidth === lockedWidth) return;
+      lockedWidth = window.innerWidth;
+      el.style.height = `${Math.round(window.innerHeight * 6)}px`;
+      ScrollTrigger.refresh();
+    }
+    lockHeight();
+
     function resize() {
+      lockHeight();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       cv.width = Math.round(cv.clientWidth * dpr);
       cv.height = Math.round(cv.clientHeight * dpr);
