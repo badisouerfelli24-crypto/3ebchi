@@ -126,7 +126,7 @@ export const SERVICES: Service[] = [
   { id: "pack2_basic", name: "Pack 2 Basic", sub: "Hjema + Lahya", price: 10, durationMin: 45, kind: "pack", parts: ["hjema", "lahya"] },
   { id: "pack2_brushing", name: "Pack 2 Brushing", sub: "Hjema + Brushing", price: 12, durationMin: 45, kind: "pack", parts: ["hjema", "brushing"] },
   { id: "pack2_lahya", name: "Pack 2 Lahya", sub: "Lahya + Brushing", price: 10, durationMin: 30, kind: "pack", parts: ["lahya", "brushing"] },
-  { id: "za9lamni", name: "Pack El Za9lamni", sub: "Produit + Hjema + Lahya", price: 80, durationMin: 60, kind: "pack", premium: true },
+  { id: "za9lamni", name: "Za9lamni Pack", sub: "Produit + Hjema + Lahya", price: 80, durationMin: 60, kind: "pack", premium: true },
 ];
 
 // -------------------------------------------------------------------------

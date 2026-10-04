@@ -27,7 +27,7 @@ export default function Services() {
                 <span className="block">
                   <span className="vip-badge">👑 PREMIUM · EXPÉRIENCE COMPLÈTE</span>
                   <span className="vip-title display mt-4 block text-[13vw] leading-[0.85] sm:text-7xl">
-                    {VIP.name.replace(/^Pack /, "")}
+                    {VIP.name}
                   </span>
                   <span className="mt-3 block max-w-md text-sm text-[#f3e7c9]/75 sm:text-base">
                     El pack el VIP : produit mte3ek, hjema w lahya — t5arej king.
@@ -45,7 +45,7 @@ export default function Services() {
                     <span className="font-mono text-xs tracking-[0.3em] text-[#f3e7c9]/70">DINARS</span>
                   </span>
                   <span className="vip-cta">
-                    Réservi Za9lamni <span aria-hidden>→</span>
+                    Réservi Za9lamni Pack <span aria-hidden>→</span>
                   </span>
                 </span>
               </span>
