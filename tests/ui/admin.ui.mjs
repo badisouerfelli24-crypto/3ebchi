@@ -103,94 +103,111 @@ for (const kind of ["desk", "mob"]) {
   });
 }
 
+// The dashboard (app/barber/dash) calls the API from the browser with the session
+// cookie: run those same calls from the logged-in page so cookies/Origin are real.
+const apiFromPage = (page, url, init = {}) =>
+  page.evaluate(
+    async ([u, i]) => {
+      const r = await fetch(u, { ...i, headers: i.body ? { "Content-Type": "application/json" } : undefined });
+      let j = null;
+      try { j = await r.json(); } catch {}
+      return { status: r.status, json: j };
+    },
+    [url, init]
+  );
+async function loginThroughScreen(kind, id) {
+  sql("delete from rate_limits");
+  const o = await openLogin(kind, id);
+  await typeAndSubmit(o.page, PW[id], "paste");
+  await o.page.waitForResponse((r) => r.url().endsWith("/api/barber/me") && r.status() === 200, { timeout: 10000 });
+  await o.page.getByText(`Ahla ${NAMES[id]}`).first().waitFor({ state: "attached", timeout: 10000 }); // dashboard header (both layouts)
+  return o;
+}
+
 for (const id of ["3ebchi", "achref", "brag", "imed"]) {
-  await check(`${id}: logs in through the screen (pasted password) and reaches the right dashboard`, async () => {
-    sql("delete from rate_limits");
-    const { ctx, page, errors } = await openLogin(id === "3ebchi" ? "desk" : "mob", id);
-    await typeAndSubmit(page, PW[id], "paste");
-    await page.getByText(`Ahla ${NAMES[id]}`).waitFor({ timeout: 10000 });
+  await check(`${id}: logs in through the screen (pasted password) and reaches the new dashboard with the right role`, async () => {
+    const { ctx, page, errors } = await loginThroughScreen(id === "3ebchi" ? "desk" : "mob", id);
     const c = await cookieOf(ctx);
     assert.ok(c && c.httpOnly && c.secure && c.sameSite === "Strict");
-    const ownerOnly = await page.locator("button", { hasText: "Voir tous" }).count();
-    assert.equal(ownerOnly > 0, id === "3ebchi", "owner-only control");
-    const body = await page.locator("body").innerText();
-    if (id === "achref") assert.ok(body.includes("Synthetic UI Achref") && !body.includes("Synthetic UI Brag"), "staff sees only own bookings");
-    if (id === "brag") assert.ok(body.includes("Synthetic UI Brag") && !body.includes("Synthetic UI Achref"));
+    const me = await apiFromPage(page, "/api/barber/me");
+    assert.equal(me.json.me.id, id);
+    assert.equal(me.json.me.isOwner, id === "3ebchi");
+    const shop = await apiFromPage(page, "/api/barber/stats?scope=shop");
+    assert.equal(shop.status, id === "3ebchi" ? 200 : 403, "shop scope is owner-only");
+    const own = await apiFromPage(page, `/api/barber/agenda?scope=${id}`);
+    assert.equal(own.status, 200);
+    if (id !== "3ebchi") {
+      const other = await apiFromPage(page, `/api/barber/agenda?scope=${id === "brag" ? "achref" : "brag"}`);
+      assert.equal(other.status, 403, "staff cannot read another barber's agenda");
+    }
+    const names = JSON.stringify(own.json);
+    if (id === "achref") assert.ok(names.includes("Synthetic UI Achref") && !names.includes("Synthetic UI Brag"));
+    if (id === "brag") assert.ok(names.includes("Synthetic UI Brag") && !names.includes("Synthetic UI Achref"));
     assert.deepEqual(errors, []);
     if (OUT) await page.screenshot({ path: path.join(OUT, `ui-dashboard-${id}.png`), fullPage: true });
     await ctx.close();
   });
 }
 
-await check("staff actions: Done on own booking, block create + delete (existing dashboard flows)", async () => {
-  sql("delete from rate_limits");
-  const { ctx, page } = await openLogin("mob", "achref");
-  await typeAndSubmit(page, PW.achref);
-  await page.getByText("Ahla ACHREF").waitFor({ timeout: 10000 });
-  const card = page.locator("div", { hasText: "Synthetic UI Achref" }).filter({ has: page.locator("button", { hasText: "Done" }) }).last();
-  await card.locator("button", { hasText: "Done" }).click();
-  await page.waitForTimeout(1500);
-  assert.equal(sql("select status from bookings where ref='3B-UIACH1'"), "done");
-  await page.locator("button", { hasText: "+ Bloquer" }).click();
-  await page.locator("div.grid.grid-cols-4 button").nth(1).click(); // pick a day (required, as before)
-  await page.locator('input[placeholder="Raison (optionnel)"]').fill("synthetic ui block");
-  await page.locator("button", { hasText: "Bloquer ce créneau" }).click();
-  await page.getByText("synthetic ui block").waitFor({ timeout: 8000 });
-  assert.equal(sql("select count(*) from blocked_slots where reason='synthetic ui block' and barber='achref'"), "1");
-  await page.locator("li", { hasText: "synthetic ui block" }).locator("button", { hasText: "Débloquer" }).click();
-  await page.waitForTimeout(1500);
+await check("staff actions through the dashboard API: block create + delete, cancel own booking; cannot touch another barber's booking", async () => {
+  const { ctx, page } = await loginThroughScreen("mob", "achref");
+  const day = sql("select ((now() at time zone 'Africa/Tunis')::date + 4)::text");
+  const d = sql(`select extract(dow from date '${day}')`) === "1" ? sql("select ((now() at time zone 'Africa/Tunis')::date + 5)::text") : day;
+  const b = await apiFromPage(page, "/api/barber/block", { method: "POST", body: JSON.stringify({ date: d, fullDay: false, start_time: "15:00", end_time: "16:00", reason: "synthetic ui block" }) });
+  assert.equal(b.status, 200, JSON.stringify(b.json));
+  const id = sql("select id from blocked_slots where reason='synthetic ui block' and barber='achref'");
+  assert.ok(id);
+  const del = await apiFromPage(page, `/api/barber/block?id=${id}`, { method: "DELETE" });
+  assert.equal(del.status, 200);
   assert.equal(sql("select count(*) from blocked_slots where reason='synthetic ui block'"), "0");
+  const own = sql("select id from bookings where ref='3B-UIACH1'");
+  const other = sql("select id from bookings where ref='3B-UIBRG1'");
+  assert.equal((await apiFromPage(page, "/api/barber/outcome", { method: "POST", body: JSON.stringify({ id: other, outcome: "cancelled" }) })).status, 403);
+  assert.equal(sql("select status from bookings where ref='3B-UIBRG1'"), "confirmed");
+  assert.equal((await apiFromPage(page, "/api/barber/outcome", { method: "POST", body: JSON.stringify({ id: own, outcome: "cancelled" }) })).status, 200);
+  assert.equal(sql("select status from bookings where ref='3B-UIACH1'"), "cancelled");
+  sql("update bookings set status='confirmed', outcome_at=null where ref='3B-UIACH1'");
   await ctx.close();
 });
 
-await check("owner actions: 'Voir tous' shows every barber; cancels another barber's booking", async () => {
-  sql("delete from rate_limits");
-  const { ctx, page } = await openLogin("desk", "3ebchi");
-  await typeAndSubmit(page, PW["3ebchi"]);
-  await page.getByText("Ahla 3EBCHI").waitFor({ timeout: 10000 });
-  await page.locator("button", { hasText: "Voir tous" }).click();
-  await page.getByText("Synthetic UI Brag").waitFor({ timeout: 8000 });
-  const card = page.locator("div", { hasText: "Synthetic UI Brag" }).filter({ has: page.locator("button", { hasText: "Annuler" }) }).last();
-  await card.locator("button", { hasText: "Annuler" }).click(); // confirm() accepted
-  await page.waitForTimeout(1500);
+await check("owner: shop-wide stats/agenda, cancels another barber's booking", async () => {
+  const { ctx, page } = await loginThroughScreen("desk", "3ebchi");
+  const ag = await apiFromPage(page, "/api/barber/agenda?scope=shop");
+  assert.equal(ag.status, 200);
+  assert.ok(JSON.stringify(ag.json).includes("Synthetic UI Brag"));
+  const other = sql("select id from bookings where ref='3B-UIBRG1'");
+  assert.equal((await apiFromPage(page, "/api/barber/outcome", { method: "POST", body: JSON.stringify({ id: other, outcome: "cancelled" }) })).status, 200);
   assert.equal(sql("select status from bookings where ref='3B-UIBRG1'"), "cancelled");
-  if (OUT) await page.screenshot({ path: path.join(OUT, "ui-owner-all.png"), fullPage: true });
+  if (OUT) await page.screenshot({ path: path.join(OUT, "ui-owner-dashboard.png"), fullPage: true });
   await ctx.close();
 });
 
 await check("logout revokes the session; replaying the old cookie is refused", async () => {
-  sql("delete from rate_limits");
-  const { ctx, page } = await openLogin("mob", "brag");
-  await typeAndSubmit(page, PW.brag);
-  await page.getByText("Ahla BRAG").waitFor({ timeout: 10000 });
+  const { ctx, page } = await loginThroughScreen("mob", "brag");
   const old = (await cookieOf(ctx)).value;
-  await page.locator("button", { hasText: "Logout" }).click();
-  await page.locator("button", { hasText: "ACHREF" }).waitFor({ timeout: 8000 });
-  const r = await fetch(BASE + "/api/barber/bookings", { headers: { cookie: `${COOKIE}=${old}` } });
+  assert.equal((await apiFromPage(page, "/api/barber/logout", { method: "POST" })).status, 200);
+  const r = await fetch(BASE + "/api/barber/me", { headers: { cookie: `${COOKIE}=${old}` } });
   assert.equal(r.status, 401);
   await ctx.close();
 });
 
-await check("server-side revocation and disabled account take effect in the open dashboard", async () => {
-  sql("delete from rate_limits");
-  sql(`update bookings set status='confirmed' where ref='3B-UIACH1'`);
-  const { ctx, page } = await openLogin("mob", "achref");
-  await typeAndSubmit(page, PW.achref);
-  await page.getByText("Ahla ACHREF").waitFor({ timeout: 10000 });
+await check("server-side revocation and disabled account take effect immediately", async () => {
+  const { ctx, page } = await loginThroughScreen("mob", "achref");
   sql("select public.admin_sessions_revoke_all('achref')");
-  const card = page.locator("div", { hasText: "Synthetic UI Achref" }).filter({ has: page.locator("button", { hasText: "Done" }) }).last();
-  await card.locator("button", { hasText: "Done" }).click();
-  await page.locator("button", { hasText: "ACHREF" }).waitFor({ timeout: 10000 }); // back to the login screen
-  assert.equal(sql("select status from bookings where ref='3B-UIACH1'"), "confirmed", "revoked session could not act");
+  assert.equal((await apiFromPage(page, "/api/barber/me")).status, 401);
+  const own = sql("select id from bookings where ref='3B-UIACH1'");
+  assert.equal((await apiFromPage(page, "/api/barber/outcome", { method: "POST", body: JSON.stringify({ id: own, outcome: "cancelled" }) })).status, 401);
+  assert.equal(sql("select status from bookings where ref='3B-UIACH1'"), "confirmed");
+  await ctx.close();
   sql("update barbers set active=false where id='imed'");
   try {
-    await page.locator("button", { hasText: "BAFFI" }).click();
-    await typeAndSubmit(page, PW.imed);
-    await page.getByText("Mot de passe ghalet").waitFor({ timeout: 8000 });
+    const o = await openLogin("mob", "imed");
+    await typeAndSubmit(o.page, PW.imed);
+    await o.page.getByText("Mot de passe ghalet").waitFor({ timeout: 8000 });
+    await o.ctx.close();
   } finally {
     sql("update barbers set active=true where id='imed'");
   }
-  await ctx.close();
 });
 
 await check("privacy page and booking-step link render with the site styles, no CSP errors", async () => {

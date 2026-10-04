@@ -57,6 +57,8 @@ case "${1:-}" in
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;"
     if [ "$1" = "stubs" ]; then echo "supabase role stubs ready in $DB"; exit 0; fi
     psql_db -f "$REPO/supabase/migration.sql"
+    # dashboard migration (already applied on production): no_show, outcome_at, push tables
+    [ -f "$REPO/supabase/migration_dashboard.sql" ] && psql_db -f "$REPO/supabase/migration_dashboard.sql"
     echo "baseline schema applied"
     ;;
   migrate)

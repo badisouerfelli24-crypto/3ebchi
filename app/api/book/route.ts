@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { rateLimit, clientIp, clientKey } from "@/lib/rateLimit";
 import { readJsonBody, isSameOrigin } from "@/lib/requestGuards";
 import { validateBooking } from "@/lib/bookingRules";
 import { SECURITY } from "@/lib/securityConfig";
+import { notifyNewBooking } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -58,8 +59,25 @@ export async function POST(req: NextRequest) {
       console.error("book rpc error", error?.code || "no data");
       return json({ ok: false, code: "SERVER", message: "Erreur serveur" }, 500);
     }
-    const r = data as { ok: boolean; code?: string; id?: string; ref?: string };
-    if (r.ok) return json({ ok: true, id: r.id, ref: r.ref });
+    const r = data as { ok: boolean; code?: string; id?: string; ref?: string; replay?: boolean };
+    if (r.ok) {
+      // Notification push au barbier (et au owner), après la réponse au client :
+      // un échec d'envoi ne doit jamais faire échouer la réservation. Un rejeu
+      // (même réservation renvoyée après une coupure) ne renotifie pas.
+      if (!r.replay) {
+        after(() =>
+          notifyNewBooking({
+            barber: b.barber.id,
+            service: b.service.name,
+            price: b.service.price,
+            date: b.date,
+            time: b.time,
+            client: b.name,
+          }).catch((e) => console.error("notify error", e instanceof Error ? e.name : "unknown"))
+        );
+      }
+      return json({ ok: true, id: r.id, ref: r.ref });
+    }
 
     switch (r.code) {
       case "SLOT_TAKEN":

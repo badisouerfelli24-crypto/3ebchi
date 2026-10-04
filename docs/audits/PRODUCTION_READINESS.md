@@ -20,6 +20,19 @@ The code, migration, tooling and tests are complete and pass locally. The site i
 
 ---
 
+## Live state (updated during the release)
+
+- **Dashboard merged.** The new hajem dashboard (commit `8209846`: stats, agenda, outcomes, push notifications) is merged with this release. Its routes now use the password sessions (`lib/dashboard/session.ts`). The two state-changing routes (`outcome`, `push`) got the same-origin and body-size checks. All suites pass on the merged code.
+- **Production database.**
+  - Done:
+    - safety copy in schema `backup_20261004` (not exposed by the API);
+    - new tables and columns created;
+    - `admin_session_revoke` created;
+    - label `production` set.
+  - **Still missing:** the remaining functions. The Supabase tool used here waits for an on-screen approval for any SQL containing `delete`. → **Run the whole migration file in the SQL Editor** (safe to rerun), then set the passwords (§D5).
+- **Vercel.** `DATA_ENVIRONMENT=production` and `ADMIN_HOSTS=3ebchi-style.vercel.app` are set for Production only. The admin moves to `https://3ebchi-style.vercel.app/barber`. Push notifications stay "not configured" until the three `VAPID_*` variables are added (optional).
+- **Code.** Committed locally and **not pushed** until the database step is done.
+
 ## A. Findings: closure and remaining exceptions
 
 | ID | Status | Remaining exception |

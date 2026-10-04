@@ -113,6 +113,8 @@ const server = http.createServer(async (req, res) => {
     let select = "*";
     let order = "";
     let limit = "";
+    let offset = "";
+    let onConflict = "";
     for (const [k, v] of url.searchParams) {
       if (k === "select") {
         const cols = v.split(",").map((c) => c.trim());
@@ -131,7 +133,12 @@ const server = http.createServer(async (req, res) => {
             .join(", ");
       } else if (k === "limit") {
         limit = ` limit ${Number(v) | 0}`;
-      } else if (k === "columns" || k === "on_conflict") {
+      } else if (k === "offset") {
+        offset = ` offset ${Number(v) | 0}`;
+      } else if (k === "on_conflict") {
+        if (!v.split(",").every((c) => IDENT.test(c))) throw new Error("bad on_conflict");
+        onConflict = v;
+      } else if (k === "columns") {
         // ignored
       } else {
         where.push(filterSql(k, v));
@@ -142,13 +149,16 @@ const server = http.createServer(async (req, res) => {
 
     let sql;
     if (req.method === "GET") {
-      sql = `select coalesce(json_agg(t), '[]'::json) from (select ${select} from ${table}${w}${order}${limit}) t`;
+      sql = `select coalesce(json_agg(t), '[]'::json) from (select ${select} from ${table}${w}${order}${limit}${offset}) t`;
     } else if (req.method === "POST") {
       const rows = Array.isArray(json) ? json : [json];
       const cols = Object.keys(rows[0]);
       if (!cols.every((c) => IDENT.test(c))) throw new Error("bad insert col");
       const values = rows.map((r) => `(${cols.map((c) => lit(r[c])).join(", ")})`).join(", ");
-      sql = `with ins as (insert into ${table} (${cols.join(", ")}) values ${values} returning *) select coalesce(json_agg(ins), '[]'::json) from ins`;
+      const upsert = onConflict && /merge-duplicates/.test(req.headers["prefer"] || "")
+        ? ` on conflict (${onConflict}) do update set ${cols.filter((c) => !onConflict.split(",").includes(c)).map((c) => `${c} = excluded.${c}`).join(", ")}`
+        : "";
+      sql = `with ins as (insert into ${table} (${cols.join(", ")}) values ${values}${upsert} returning *) select coalesce(json_agg(ins), '[]'::json) from ins`;
     } else if (req.method === "PATCH") {
       const sets = Object.entries(json).map(([c, v]) => {
         if (!IDENT.test(c)) throw new Error("bad set");
