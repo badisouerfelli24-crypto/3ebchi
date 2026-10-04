@@ -140,7 +140,11 @@ export default function CinematicIntro() {
     /* ---------- Lenis + ScrollTrigger ---------- */
     let lenis: Lenis | null = null;
     const tick = (t: number) => lenis?.raf(t * 1000);
-    if (!reduce) {
+    // Lenis lisse uniquement la molette / le trackpad (ordinateur). Sur téléphone
+    // et tablette, le défilement tactile natif est déjà fluide : y ajouter Lenis
+    // fait se contrarier deux systèmes (sauts, surtout sur iPhone).
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    if (!reduce && finePointer) {
       lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
       lenis.on("scroll", ScrollTrigger.update);
       gsap.ticker.add(tick);

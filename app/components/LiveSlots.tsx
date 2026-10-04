@@ -1,5 +1,6 @@
 "use client";
 
+import { smoothScrollTo } from "@/lib/smoothScroll";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBarber } from "@/config/site";
@@ -33,6 +34,8 @@ export default function LiveSlots() {
       setRows(d.hajema);
       setError(false);
     } catch {
+      // Une actualisation ratée (réseau mobile) garde la liste affichée : pas
+      // de changement de hauteur qui ferait sauter la page sous les pieds.
       setError(true);
     }
   }, []);
@@ -69,7 +72,7 @@ export default function LiveSlots() {
 
   function pick(barber: string, date: string, time: string) {
     window.dispatchEvent(new CustomEvent("prefill-booking", { detail: { barber, date, time } }));
-    document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" });
+    smoothScrollTo("booking");
   }
 
   return (
@@ -96,12 +99,14 @@ export default function LiveSlots() {
         Chkoun fergh <span className="text-muted">tawa?</span>
       </h3>
 
-      <ul className="relative mt-4 space-y-2">
+      {/* Hauteur réservée (4 lignes) : la carte ne change pas de taille entre
+          chargement, liste et erreur, donc rien ne bouge plus bas dans la page. */}
+      <ul className="relative mt-4 min-h-[272px] space-y-2">
         {!rows &&
           !error &&
           Array.from({ length: 4 }).map((_, i) => <li key={i} className="h-[62px] animate-pulse rounded-2xl bg-white/[0.04]" />)}
 
-        {error && (
+        {error && !rows && (
           <li className="rounded-2xl border border-line px-4 py-4 text-sm text-muted">
             Ma najjamnech njibou l&apos;blayes tawa.{" "}
             <button onClick={load} className="text-fg underline underline-offset-4">
@@ -116,7 +121,7 @@ export default function LiveSlots() {
           return (
             <li
               key={r.barber}
-              className="live-row flex items-center gap-3 rounded-2xl border border-line bg-white/[0.02] p-2.5 pr-2"
+              className="live-row flex min-h-[62px] items-center gap-3 rounded-2xl border border-line bg-white/[0.02] p-2.5 pr-2"
               style={{ animationDelay: `${i * 90}ms` }}
             >
               {h.photo ? (

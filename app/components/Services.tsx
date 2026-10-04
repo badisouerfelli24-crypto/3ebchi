@@ -1,5 +1,6 @@
 "use client";
 
+import { smoothScrollTo } from "@/lib/smoothScroll";
 import { SERVICES, packSaving, type Service } from "@/config/site";
 import SectionHead from "./SectionHead";
 
@@ -10,7 +11,7 @@ const VIP = SERVICES.find((s) => s.premium);
 export default function Services() {
   function pick(id: string) {
     window.dispatchEvent(new CustomEvent("select-service", { detail: id }));
-    document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" });
+    smoothScrollTo("booking");
   }
 
   return (

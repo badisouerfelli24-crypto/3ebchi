@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { smoothScrollTo, smoothScrollTop } from "@/lib/smoothScroll";
 
 /** Toujours ouvrir la page en haut (pas de restauration de scroll, pas de saut
  *  vers une ancre #section restée dans l'URL), et faire défiler les liens
@@ -22,8 +23,8 @@ export default function ScrollManager() {
       if (!a) return;
       const id = a.getAttribute("href")!.slice(1);
       e.preventDefault();
-      if (!id || id === "top") return window.scrollTo({ top: 0, behavior: "smooth" });
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+      if (!id || id === "top") return smoothScrollTop();
+      smoothScrollTo(id);
     }
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);

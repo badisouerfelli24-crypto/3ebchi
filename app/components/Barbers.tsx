@@ -1,5 +1,6 @@
 "use client";
 
+import { smoothScrollTo } from "@/lib/smoothScroll";
 import Image from "next/image";
 import { BARBERS } from "@/config/site";
 import SectionHead from "./SectionHead";
@@ -10,7 +11,7 @@ const LABEL = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook" }
 export default function Barbers() {
   function pick(id: string) {
     window.dispatchEvent(new CustomEvent("select-barber", { detail: id }));
-    document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" });
+    smoothScrollTo("booking");
   }
 
   return (

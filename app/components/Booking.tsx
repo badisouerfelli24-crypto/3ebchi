@@ -1,5 +1,6 @@
 "use client";
 
+import { smoothScrollTo } from "@/lib/smoothScroll";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { BARBERS, SERVICES, SITE, BOOKING_WINDOW_DAYS, getBarber, getService } from "@/config/site";
@@ -132,7 +133,7 @@ export default function Booking() {
       if (res.ok && data.ok) {
         setSuccess({ barber, service, date, time, durationMin: getService(service)!.durationMin, ref: data.ref || "", name: name.trim() });
         // ramener le ticket à l'écran
-        requestAnimationFrame(() => document.getElementById("booking")?.scrollIntoView({ behavior: "smooth" }));
+        requestAnimationFrame(() => smoothScrollTo("booking"));
         return;
       }
       if (data.code === "SLOT_TAKEN") {

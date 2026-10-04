@@ -22,7 +22,10 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  /* Pas de scroll-behavior: smooth global : ScrollTrigger et Lenis repositionnent
+     la page eux-mêmes (après un recalcul, un retour dans l'onglet…) et ce réglage
+     transformait ces corrections invisibles en glissements visibles. Les liens
+     internes défilent en douceur via lib/smoothScroll.ts. */
   -webkit-tap-highlight-color: transparent;
 }
 
