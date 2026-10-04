@@ -30,7 +30,7 @@ export default function Services() {
                     {VIP.name}
                   </span>
                   <span className="mt-3 block max-w-md text-sm text-[#f3e7c9]/75 sm:text-base">
-                    El pack el VIP : produit mte3ek, hjema w lahya — t5arej king.
+                    El pack el VIP : produit mte3ek, hjema w lahya — tokhrej king.
                   </span>
                   <span className="mt-4 flex flex-wrap gap-2">
                     {(VIP.sub ?? "").split(" + ").map((x) => (
