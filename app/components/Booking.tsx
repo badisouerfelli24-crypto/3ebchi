@@ -300,13 +300,17 @@ export default function Booking() {
                 <Step title="A5tar l'service" onBack={() => setStep(1)}>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {SERVICES.map((s) => (
-                      <Tile key={s.id} selected={service === s.id} onClick={() => { setService(s.id); setStep(date && prefTime ? 4 : 3); }}>
+                      <Tile key={s.id} vip={s.premium} selected={service === s.id} onClick={() => { setService(s.id); setStep(date && prefTime ? 4 : 3); }}>
                         <div className="flex items-center justify-between gap-3">
                           <div>
-                            <div className="font-display font-extrabold">{s.name}</div>
+                            <div className={`font-display font-extrabold ${s.premium ? "text-[#f5d17a]" : ""}`}>
+                              {s.premium && "👑 "}
+                              {s.name}
+                            </div>
+                            <div className="text-xs text-fg/60">{s.sub}</div>
                             <div className="font-mono text-xs text-muted">{s.durationMin} min</div>
                           </div>
-                          <div className="font-display text-2xl font-black">
+                          <div className={`font-display text-2xl font-black ${s.premium ? "text-[#f5d17a]" : ""}`}>
                             {s.price}
                             <span className="ml-0.5 font-mono text-[10px] text-muted">DT</span>
                           </div>
@@ -453,11 +457,11 @@ function Step({ title, children, onBack }: { title: string; children: React.Reac
   );
 }
 
-function Tile({ children, selected, onClick }: { children: React.ReactNode; selected?: boolean; onClick: () => void }) {
+function Tile({ children, selected, onClick, vip }: { children: React.ReactNode; selected?: boolean; onClick: () => void; vip?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl border p-4 text-left transition-all duration-300 ${
+      className={`rounded-2xl border p-4 text-left transition-all duration-300 ${vip ? "tile-vip sm:col-span-2 " : ""}${
         selected ? "border-fg bg-white/[0.07]" : "border-line hover:-translate-y-0.5 hover:border-white/30 hover:bg-white/[0.03]"
       }`}
     >

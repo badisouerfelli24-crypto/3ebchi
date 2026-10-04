@@ -97,28 +97,36 @@ export const BARBERS: Barber[] = [
 ];
 
 // -------------------------------------------------------------------------
-// SERVICES & PRIX (placeholders — change les prix/durées librement)
+// SERVICES & PRIX
 // -------------------------------------------------------------------------
 // id          : identifiant interne.
 // name        : nom affiché.
+// sub         : petite ligne sous le nom (traduction / contenu du pack).
 // price       : prix en DT (nombre).
-// durationMin : durée en minutes (doit être un multiple de SLOT_MINUTES,
-//               sinon les services longs bloqueront les créneaux consécutifs
-//               arrondis au multiple supérieur).
+// durationMin : durée en minutes (bloque ceil(durée / SLOT_MINUTES) créneaux).
+// kind        : "solo" (service seul) ou "pack".
+// parts       : ids des services seuls inclus dans le pack → calcule l'économie.
+// premium     : carte spéciale (dorée) mise en avant.
 export type Service = {
   id: string;
   name: string;
+  sub?: string;
   price: number;
   durationMin: number;
+  kind: "solo" | "pack";
+  parts?: string[];
+  premium?: boolean;
 };
 
 export const SERVICES: Service[] = [
-  { id: "coupe", name: "Coupe simple", price: 15, durationMin: 30 },
-  { id: "coupe_barbe", name: "Coupe + barbe", price: 25, durationMin: 45 },
-  { id: "fade", name: "Dégradé (fade)", price: 20, durationMin: 30 },
-  { id: "barbe", name: "Barbe seulement", price: 10, durationMin: 15 },
-  { id: "enfant", name: "Coupe enfant", price: 12, durationMin: 30 },
-  { id: "soin", name: "Soin visage", price: 20, durationMin: 30 },
+  { id: "hjema", name: "Hjema", sub: "Coupe", price: 8, durationMin: 30, kind: "solo" },
+  { id: "lahya", name: "Lahya", sub: "Barbe", price: 5, durationMin: 15, kind: "solo" },
+  { id: "brushing", name: "Brushing", sub: "Coiffage", price: 6, durationMin: 15, kind: "solo" },
+  { id: "pack3_complet", name: "Pack 3 Complet", sub: "Hjema + Lahya + Brushing", price: 15, durationMin: 60, kind: "pack", parts: ["hjema", "lahya", "brushing"] },
+  { id: "pack2_basic", name: "Pack 2 Basic", sub: "Hjema + Lahya", price: 10, durationMin: 45, kind: "pack", parts: ["hjema", "lahya"] },
+  { id: "pack2_brushing", name: "Pack 2 Brushing", sub: "Hjema + Brushing", price: 12, durationMin: 45, kind: "pack", parts: ["hjema", "brushing"] },
+  { id: "pack2_lahya", name: "Pack 2 Lahya", sub: "Lahya + Brushing", price: 10, durationMin: 30, kind: "pack", parts: ["lahya", "brushing"] },
+  { id: "za9lamni", name: "Pack El Za9lamni", sub: "Produit + Hjema + Lahya", price: 80, durationMin: 60, kind: "pack", premium: true },
 ];
 
 // -------------------------------------------------------------------------
@@ -126,7 +134,7 @@ export const SERVICES: Service[] = [
 // -------------------------------------------------------------------------
 // title  : titre affiché sur la carte.
 // views  : texte libre (ex "62.4K views").
-// url    : lien de la vidéo TikTok d'origine (utilisé par la v1 + lien "voir").
+// url    : lien de la vidéo TikTok d'origine.
 // src    : fichier MP4 hébergé sur le site (public/reels/…) — lecture fluide,
 //          sans logo ni boutons TikTok. Pour ajouter une vidéo : mets le .mp4
 //          et une image .jpg (poster) dans public/reels/ puis ajoute une ligne.
@@ -153,6 +161,9 @@ export const VIDEOS: TikTokVideo[] = [
 // -------------------------------------------------------------------------
 export const getBarber = (id: string) => BARBERS.find((b) => b.id === id);
 export const getService = (id: string) => SERVICES.find((s) => s.id === id);
+// Économie d'un pack par rapport aux services pris séparément (0 si aucune).
+export const packSaving = (s: Service) =>
+  s.parts ? Math.max(0, s.parts.reduce((t, id) => t + (getService(id)?.price ?? 0), 0) - s.price) : 0;
 export const isOwner = (id: string) => !!getBarber(id)?.isOwner;
 
 // Nombre de créneaux consécutifs occupés par un service.

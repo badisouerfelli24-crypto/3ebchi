@@ -707,3 +707,114 @@ html.lenis body {
     animation: none;
   }
 }
+
+/* ---------- Pack premium (El Za9lamni) ---------- */
+.vip {
+  --gold: #f5d17a;
+  --gold-2: #c9973f;
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 1.5px;
+  border-radius: 28px;
+  text-align: left;
+  overflow: hidden;
+  background: conic-gradient(from var(--vip-a, 0deg), var(--gold-2), #fff3c4, var(--gold), #7a5a1e, var(--gold-2));
+  animation: vip-spin 6s linear infinite;
+  box-shadow: 0 30px 90px -30px rgba(245, 209, 122, 0.45);
+  transition: transform 0.5s var(--ease), box-shadow 0.5s var(--ease);
+}
+@property --vip-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes vip-spin {
+  to { --vip-a: 360deg; }
+}
+.vip:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 40px 110px -30px rgba(245, 209, 122, 0.7);
+}
+.vip-inner {
+  position: relative;
+  display: block;
+  border-radius: 26.5px;
+  padding: 28px 22px;
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(245, 209, 122, 0.22), transparent 55%),
+    radial-gradient(70% 90% at 0% 100%, rgba(201, 151, 63, 0.16), transparent 60%),
+    linear-gradient(160deg, #17130b, #0b0a08 60%);
+  color: #f3e7c9;
+}
+@media (min-width: 640px) {
+  .vip-inner { padding: 44px 48px; }
+  .vip-cta { padding: 16px 26px; font-size: 17px; }
+}
+.vip-shine {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 240, 200, 0.18) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: vip-shine 4.5s var(--ease) infinite;
+}
+@keyframes vip-shine {
+  0%, 55% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.vip-badge {
+  display: inline-block;
+  border: 1px solid rgba(245, 209, 122, 0.45);
+  background: rgba(245, 209, 122, 0.1);
+  color: var(--gold);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+}
+.vip-title,
+.vip-price {
+  background: linear-gradient(180deg, #fff6d6 0%, var(--gold) 45%, var(--gold-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 30px rgba(245, 209, 122, 0.25));
+}
+.vip-chip {
+  border: 1px solid rgba(245, 209, 122, 0.25);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f3e7c9;
+  background: rgba(255, 255, 255, 0.03);
+}
+.vip-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 14px 20px;
+  font-family: var(--font-display), sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1a1206;
+  background: linear-gradient(180deg, #fff1c1, var(--gold) 55%, var(--gold-2));
+  box-shadow: 0 10px 30px -8px rgba(245, 209, 122, 0.6);
+  transition: transform 0.4s var(--ease);
+}
+.vip:hover .vip-cta {
+  transform: translateX(4px);
+}
+/* Tuile premium dans le formulaire de réservation */
+.tile-vip {
+  border-color: rgba(245, 209, 122, 0.45) !important;
+  background: linear-gradient(160deg, rgba(245, 209, 122, 0.12), rgba(245, 209, 122, 0.02)) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vip, .vip-shine { animation: none; }
+}

@@ -59,9 +59,15 @@ sans logo ni boutons, aucune vidéo noire ou recadrée.
 
 ### Ancienne version (graffiti)
 
-La première version du site reste accessible sur **`/v1`** (et dans la branche git
-`v1-graffiti`). Pour la remettre en page d'accueil : copier `app/v1/page.tsx` dans
-`app/page.tsx` (et ses composants `app/v1/_components`).
+L'ancienne version a été retirée du site. Elle reste uniquement dans la branche git
+`v1-graffiti`.
+
+### Accès à l'espace hajem
+
+L'espace hajem (`/barber`) n'apparaît nulle part sur le site public et répond 404 sur
+le domaine de production. Il n'est accessible que via :
+**https://3ebchi-style-git-preview-badis4.vercel.app/barber**
+(liste modifiable avec la variable d'env `ADMIN_HOSTS`, voir `middleware.ts`).
 
 ### Ajouter / changer la photo d'un barbier
 
