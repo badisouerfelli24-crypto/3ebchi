@@ -103,17 +103,50 @@ table `barbers` de Supabase.
 
 ---
 
-## 📅 Voir / gérer les réservations
+## 📅 Dashboard hajem (réservations, stats, notifications)
 
-- Va sur **`/barber`** (lien discret « Espace barber 🔒 » en bas du site).
-- Chaque barbier entre **son PIN**.
+- Va sur **`/barber`** (domaine admin uniquement, voir plus haut) et entre **ton PIN**.
 - Barbers : 3EBCHI (owner), ACHREF, BRAG, BAFFI (id interne `imed`).
-- Il voit **ses** réservations (aujourd'hui en premier, puis à venir) avec :
-  nom du client, téléphone (clic = appel, bouton WhatsApp), service, heure, note.
-- Actions : **✅ Done**, **✖ Annuler** (libère le créneau), **⛔ Bloquer**
-  un créneau ou une journée (pause / absence).
-- **3ebchi (le patron)** a en plus un bouton **👑 Voir tous** + des **stats**
-  (réservations aujourd'hui / cette semaine, par barbier).
+- Mode **sombre** par défaut, mode **clair** en un clic (☀️). Pensé mobile d'abord.
+
+**Stats** — pour Aujourd'hui, Hier, Semaine, Mois et Total :
+nombre de réservations, **encaissé** (seules les réservations marquées
+« Hjema faite » comptent), **taux hjema** (hjemas faites ÷ réservations dont
+l'issue est posée), ticket moyen, courbe interactive (7/30/90 jours, touche ou
+survole pour le détail), issues des réservations, heures de pointe.
+Semaine / mois / total sont comptés « à date » et comparés au même moment de la
+période précédente. Les réservations futures sont dans « À venir ».
+
+**Agenda** — « À clôturer » (rendez-vous passés sans issue), aujourd'hui, à venir,
+clôturées récemment. Sur chaque rendez-vous passé : **Hjema faite**, **Pas venu** ou
+**Annulée** (modifiable ensuite avec « Modifier »). Un rendez-vous futur peut être
+annulé (libère le créneau). Appel / WhatsApp en un clic. Blocages (pause / absence).
+
+**Qui voit quoi**
+- Chaque hajem ne voit **que ses** réservations et ses stats.
+- **3EBCHI** a des dashboards séparés : **Boutique** (toute l'équipe, avec le taux
+  hjema et le classement par hajem), **le sien**, et **un par membre**.
+
+**Notifications (gratuites)** — Réglages → « Activer sur cet appareil ».
+Chaque hajem reçoit une notification pour **ses** nouvelles réservations.
+3EBCHI reçoit aussi celles de l'équipe et peut **couper chaque membre** séparément.
+Quand le dashboard est ouvert, une alerte + un petit son s'affichent en direct.
+- **iPhone** : ouvre `/barber` dans Safari → Partager → « Sur l'écran d'accueil »,
+  puis ouvre « 3EBCHI Pro » depuis l'icône et active les notifications (exigence d'Apple).
+- Android / ordinateur : directement depuis le navigateur.
+
+### Activer le dashboard (une seule fois)
+
+1. **Supabase → SQL Editor** : colle et lance
+   [`supabase/migration_dashboard.sql`](supabase/migration_dashboard.sql)
+   (ajoute « Pas venu », les abonnements push et les préférences — ne supprime rien).
+2. **Clés de notification** (Web Push, gratuites — aucun service payant) :
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+   Ajoute sur Vercel : `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` et
+   `VAPID_SUBJECT` (ex : `mailto:ton-email@exemple.com`), puis redéploie.
+   Sans ces clés, tout marche sauf les notifications push.
 
 ---
 
@@ -144,6 +177,7 @@ npm run dev
 3. **SQL Editor → New query** : colle **tout** le contenu de
    [`supabase/migration.sql`](supabase/migration.sql) → **Run**.
    Ça crée les tables, la protection anti-double-booking, et les 4 barbiers.
+   Puis fais pareil avec [`supabase/migration_dashboard.sql`](supabase/migration_dashboard.sql).
 4. Définis les PIN (voir « Changer un PIN » plus haut) — un `update` par barbier.
 
 > La migration active la **RLS** sans policy publique : personne ne peut lire la
@@ -161,6 +195,8 @@ Voir [`.env.example`](.env.example).
 | `NEXT_PUBLIC_SUPABASE_URL` | URL du projet Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Clé secrète serveur (⚠️ jamais exposée) |
 | `SESSION_SECRET` | Secret pour signer les sessions barbier (≥ 32 car.) |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Clés des notifications push (voir « Dashboard hajem ») |
+| `VAPID_SUBJECT` | Contact pour les services push, ex : `mailto:toi@exemple.com` |
 
 Générer un `SESSION_SECRET` :
 ```bash
@@ -173,8 +209,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 1. Pousse le code sur GitHub.
 2. Sur [vercel.com](https://vercel.com) → **Add New → Project** → importe le repo.
-3. **Environment Variables** : ajoute les 3 variables ci-dessus
-   (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`).
+3. **Environment Variables** : ajoute les variables ci-dessus
+   (`NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SESSION_SECRET`,
+   et les 3 `VAPID_*` pour les notifications).
 4. **Deploy**. Framework détecté automatiquement (Next.js).
 5. Chaque `git push` redéploie le site.
 
