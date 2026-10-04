@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { getBarber, getService } from "@/config/site";
 import { normalizeTunisianPhone, isValidName, sanitizeNote } from "@/lib/validation";
 import { isClosedDay, dayWindow } from "@/lib/slots";
 import { todayTunis, toMinutes } from "@/lib/time";
 import { rateLimit, clientIp } from "@/lib/rateLimit";
+import { notifyNewBooking } from "@/lib/push";
 
 export const dynamic = "force-dynamic";
 
@@ -91,6 +92,20 @@ export async function POST(req: NextRequest) {
     }
 
     const row = data as { id?: string; ref?: string } | null;
+
+    // Notification push au barbier (et au owner), après la réponse au client :
+    // un échec d'envoi ne doit jamais faire échouer la réservation.
+    after(() =>
+      notifyNewBooking({
+        barber: barber.id,
+        service: service.name,
+        price: service.price,
+        date,
+        time,
+        client: name.trim(),
+      }).catch((e) => console.error("notify error", e))
+    );
+
     return NextResponse.json({ ok: true, id: row?.id, ref: row?.ref });
   } catch (e) {
     console.error("book error", e);

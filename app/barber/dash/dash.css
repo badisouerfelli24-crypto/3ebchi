@@ -1,0 +1,510 @@
+/* =========================================================================
+   Dashboard hajem — styles SCOPÉS à .dash (n'affecte pas le site public).
+   Sombre par défaut ; clair via [data-theme="light"].
+   Couleurs des graphes validées (lightness band, CVD, contraste) pour
+   chaque mode — voir commit. Les couleurs de statut sont réservées.
+   ========================================================================= */
+
+.dash {
+  --bg: #0b0b0e;
+  --bg-glow: rgba(34, 211, 238, 0.10);
+  --bg-glow-2: rgba(139, 92, 246, 0.08);
+  --surface: #121216;
+  --card: rgba(255, 255, 255, 0.035);
+  --card-hi: rgba(255, 255, 255, 0.06);
+  --card-solid: #131318;
+  --border: rgba(255, 255, 255, 0.075);
+  --border-hi: rgba(255, 255, 255, 0.14);
+  --ink: #f5f5f4;
+  --ink-2: #a1a1aa;
+  --ink-3: #71717a;
+  --grid: rgba(255, 255, 255, 0.06);
+  --accent: #22d3ee;
+  --accent-2: #0ea5c4;
+  --accent-ink: #03161b;
+  --accent-soft: rgba(34, 211, 238, 0.12);
+  --accent-line: #22d3ee;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 32px -12px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 24px 60px -20px rgba(0, 0, 0, 0.85);
+
+  /* Statut (réservé, toujours avec icône + libellé) */
+  --good: #22c55e;
+  --good-soft: rgba(34, 197, 94, 0.14);
+  --warn: #fab219;
+  --warn-soft: rgba(250, 178, 25, 0.14);
+  --crit: #f05252;
+  --crit-soft: rgba(240, 82, 82, 0.14);
+  --neutral: #71717a;
+  --neutral-soft: rgba(161, 161, 170, 0.14);
+
+  /* Série par barbier (ordre fixe de BARBERS) */
+  --s1: #0e9fb8;
+  --s2: #8b5cf6;
+  --s3: #ec4899;
+  --s4: #c27a0e;
+
+  color-scheme: dark;
+  overflow-x: clip;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100dvh;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dash[data-theme="light"] {
+  --bg: #f4f5f7;
+  --bg-glow: rgba(8, 145, 178, 0.08);
+  --bg-glow-2: rgba(124, 58, 237, 0.05);
+  --surface: #ffffff;
+  --card: #ffffff;
+  --card-hi: #f7f8fa;
+  --card-solid: #ffffff;
+  --border: rgba(15, 18, 30, 0.08);
+  --border-hi: rgba(15, 18, 30, 0.16);
+  --ink: #0b0b0e;
+  --ink-2: #52525b;
+  --ink-3: #85858f;
+  --grid: rgba(15, 18, 30, 0.07);
+  --accent: #0891b2;
+  --accent-2: #0e7490;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(8, 145, 178, 0.1);
+  --accent-line: #0891b2;
+  --shadow: 0 1px 2px rgba(15, 18, 30, 0.05), 0 8px 24px -12px rgba(15, 18, 30, 0.14);
+  --shadow-pop: 0 24px 60px -20px rgba(15, 18, 30, 0.3);
+
+  --good: #0ca30c;
+  --good-soft: rgba(12, 163, 12, 0.1);
+  --warn: #b7791f;
+  --warn-soft: rgba(250, 178, 25, 0.16);
+  --crit: #d03b3b;
+  --crit-soft: rgba(208, 59, 59, 0.1);
+  --neutral: #85858f;
+  --neutral-soft: rgba(82, 82, 91, 0.08);
+
+  --s1: #0891b2;
+  --s2: #7c3aed;
+  --s3: #db2777;
+  --s4: #b45309;
+
+  color-scheme: light;
+}
+
+.dash ::selection { background: var(--accent); color: var(--accent-ink); }
+
+/* Fond : deux halos très doux */
+.dash-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, var(--bg-glow), transparent 60%),
+    radial-gradient(40rem 30rem at -10% 20%, var(--bg-glow-2), transparent 60%);
+}
+
+.dash .num {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.dash .tnum { font-variant-numeric: tabular-nums; }
+.dash .eyebrow {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ---------- Cartes ---------- */
+.d-card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.d-card-hero {
+  background:
+    radial-gradient(120% 140% at 100% 0%, var(--accent-soft), transparent 55%),
+    var(--card);
+}
+.d-card-hero::before {
+  /* liseré lumineux en haut */
+  content: "";
+  position: absolute;
+  inset: 0 18% auto 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0.7;
+}
+.d-card-hover { transition: border-color 0.2s, transform 0.2s var(--ease, ease), background 0.2s; }
+.d-card-hover:hover { border-color: var(--border-hi); }
+.d-card-hover:active { transform: scale(0.99); }
+
+/* ---------- Boutons (pas génériques : relief + ombre teintée) ---------- */
+.d-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s, border-color 0.2s, opacity 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.d-btn-sm { min-height: 40px; height: 40px; padding: 0 10px; gap: 6px; border-radius: 12px; min-width: 0; }
+.d-btn-xs { min-height: 36px; height: 36px; padding: 0 12px; border-radius: 11px; font-size: 13px; }
+.d-btn:active { transform: translateY(1px) scale(0.98); }
+.d-btn:disabled { opacity: 0.45; pointer-events: none; }
+.d-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.d-btn-primary {
+  color: var(--accent-ink);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 88%, white) 0%, var(--accent-2) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 8px 24px -8px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+.d-btn-primary:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 10px 30px -6px color-mix(in oklab, var(--accent) 80%, transparent);
+}
+
+.d-btn-ghost {
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  border: 1px solid var(--border-hi);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 16px -10px rgba(0, 0, 0, 0.6);
+}
+.d-btn-ghost:hover { border-color: color-mix(in oklab, var(--accent) 50%, var(--border-hi)); }
+
+.d-btn-tone {
+  /* bouton coloré par --tone (succès / danger / attention) */
+  color: var(--tone);
+  background: linear-gradient(180deg, color-mix(in oklab, var(--tone) 18%, transparent), color-mix(in oklab, var(--tone) 9%, transparent));
+  border: 1px solid color-mix(in oklab, var(--tone) 38%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 8px 20px -12px var(--tone);
+}
+.d-btn-tone:hover { background: color-mix(in oklab, var(--tone) 22%, transparent); }
+.d-btn-tone.is-solid {
+  color: #fff;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--tone) 85%, white), var(--tone));
+  border-color: transparent;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.15), 0 10px 24px -10px var(--tone);
+}
+
+.d-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  color: var(--ink-2);
+  background: linear-gradient(180deg, var(--card-hi), var(--card));
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: color 0.2s, border-color 0.2s, transform 0.15s;
+}
+.d-icon-sm { width: 36px; height: 36px; border-radius: 11px; }
+.d-icon-md { width: 40px; height: 40px; border-radius: 12px; }
+.d-icon-btn:hover { color: var(--ink); border-color: var(--border-hi); }
+.d-icon-btn:active { transform: scale(0.95); }
+.d-icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Contrôle segmenté avec "pastille" glissante ---------- */
+.d-seg {
+  position: relative;
+  display: flex;
+  padding: 4px;
+  gap: 2px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--ink) 5%, transparent);
+  border: 1px solid var(--border);
+}
+.d-seg-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--card-hi), var(--surface));
+  border: 1px solid var(--border-hi);
+  box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  transition: left 0.28s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.d-seg button {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.d-seg button[aria-pressed="true"] { color: var(--ink); }
+.d-seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* ---------- Chips de portée (owner) ---------- */
+.d-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px 0 6px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--card);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.d-chip[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: color-mix(in oklab, var(--chip, var(--accent)) 60%, transparent);
+  background: color-mix(in oklab, var(--chip, var(--accent)) 14%, var(--card));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--chip, var(--accent)) 14%, transparent);
+}
+
+/* ---------- Pastilles delta / statut ---------- */
+.d-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.d-pill-good { color: var(--good); background: var(--good-soft); }
+.d-pill-crit { color: var(--crit); background: var(--crit-soft); }
+.d-pill-warn { color: var(--warn); background: var(--warn-soft); }
+.d-pill-neutral { color: var(--ink-2); background: var(--neutral-soft); }
+.d-pill-accent { color: var(--accent); background: var(--accent-soft); }
+
+/* ---------- Switch ---------- */
+.d-switch {
+  position: relative;
+  width: 46px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ink) 14%, transparent);
+  border: 1px solid var(--border);
+  transition: background 0.2s;
+}
+.d-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.d-switch[aria-checked="true"] { background: var(--accent); }
+.d-switch[aria-checked="true"]::after { transform: translateX(18px); }
+.d-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Champs ---------- */
+.d-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: var(--ink);
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+  border: 1px solid var(--border-hi);
+  font-size: 15px;
+}
+.d-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+/* ---------- Navigation ---------- */
+.d-tabbar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 6px;
+  border-radius: 22px;
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  border: 1px solid var(--border-hi);
+  box-shadow: var(--shadow-pop);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+@media (min-width: 1024px) {
+  .d-tabbar { display: none; }
+}
+.d-tabbar button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0 6px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  transition: color 0.2s, background 0.2s;
+}
+.d-tabbar button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+.d-side-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  transition: background 0.2s, color 0.2s;
+}
+.d-side-link:hover { background: var(--card-hi); color: var(--ink); }
+.d-side-link[aria-current="page"] {
+  color: var(--ink);
+  background: linear-gradient(90deg, var(--accent-soft), transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Badge de compteur */
+.d-badge {
+  position: absolute;
+  top: 2px;
+  right: calc(50% - 22px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: var(--crit);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* ---------- Graphes ---------- */
+.d-chart text { fill: var(--ink-3); font-size: 10.5px; font-family: var(--font-inter), system-ui, sans-serif; }
+.d-tooltip {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  padding: 8px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: var(--card-solid);
+  border: 1px solid var(--border-hi);
+  box-shadow: var(--shadow-pop);
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 12px));
+}
+
+/* ---------- Toasts ---------- */
+.d-toasts {
+  position: fixed;
+  z-index: 60;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+@media (min-width: 1024px) {
+  .d-toasts { left: auto; right: 24px; top: 24px; width: 380px; }
+}
+.d-toast {
+  pointer-events: auto;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: color-mix(in oklab, var(--card-solid) 92%, transparent);
+  border: 1px solid var(--border-hi);
+  box-shadow: var(--shadow-pop), 0 0 0 1px color-mix(in oklab, var(--accent) 25%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: d-toast-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes d-toast-in {
+  from { opacity: 0; transform: translateY(-14px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Apparition des cartes */
+.d-rise { animation: d-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes d-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Squelette de chargement */
+.d-skel {
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--card), var(--card-hi), var(--card));
+  background-size: 200% 100%;
+  animation: d-skel 1.2s linear infinite;
+}
+@keyframes d-skel { to { background-position: -200% 0; } }
+
+/* Défilement horizontal sans barre */
+.d-scroll-x { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.d-scroll-x::-webkit-scrollbar { display: none; }
+
+/* Live dot */
+.d-live {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--good);
+  box-shadow: 0 0 0 0 var(--good);
+  animation: d-live 2s infinite;
+}
+@keyframes d-live {
+  0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--good) 60%, transparent); }
+  70% { box-shadow: 0 0 0 8px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash *, .dash *::before, .dash *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .d-pill, .d-btn, .d-chip { border: 1px solid CanvasText; }
+}
