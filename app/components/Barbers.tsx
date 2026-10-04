@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { BARBERS } from "@/config/site";
 import SectionHead from "./SectionHead";
+import SocialIcon from "./SocialIcon";
+
+const LABEL = { tiktok: "TikTok", instagram: "Instagram", facebook: "Facebook" } as const;
 
 export default function Barbers() {
   function pick(id: string) {
@@ -46,6 +49,23 @@ export default function Barbers() {
                   <p className="mt-1 text-xs text-fg/75 sm:text-sm">{b.tagline}</p>
                 </div>
               </div>
+              {b.socials && b.socials.length > 0 && (
+                <div className="mt-2 flex gap-1.5">
+                  {b.socials.map((so) => (
+                    <a
+                      key={so.url}
+                      href={so.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${b.name} sur ${LABEL[so.kind]}`}
+                      title={LABEL[so.kind]}
+                      className="grid h-10 flex-1 place-items-center rounded-[12px] border border-line text-fg/80 transition-colors hover:border-white/30 hover:bg-white/[0.06] hover:text-fg"
+                    >
+                      <SocialIcon kind={so.kind} />
+                    </a>
+                  ))}
+                </div>
+              )}
               <button
                 onClick={() => pick(b.id)}
                 className="mt-2 flex w-full items-center justify-between rounded-[14px] border border-line px-3 py-3 text-left text-sm font-bold transition-colors hover:bg-white hover:text-black"

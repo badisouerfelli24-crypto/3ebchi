@@ -31,10 +31,17 @@ export const SITE = {
 // -------------------------------------------------------------------------
 // STATS (bandeau hype) — change les chiffres quand ça grandit 🔥
 // -------------------------------------------------------------------------
+// Totaux publics de TOUS les comptes de l'équipe (relevés le 04/10/2026) :
+//  followers : TikTok @abdouabidi8 1 553 + Insta @abdouabidi 3 467
+//              + Insta @baffi1312 1 178 + Facebook Achref Mannai 1 900  = 8 098
+//  likes     : TikTok 11 717 + Insta @abdouabidi (posts 44 848 + reels 1 132) = 57 697
+//  views     : TikTok 165 256 (30 vidéos) + Insta reels 29 813            = 195 069
+//  (Insta @_la_ruee_09 et @achref.mannai sont privés, et Facebook cache le nombre
+//   d'amis des profils perso de 3ebchi et Baffi : ils ne sont pas comptés.)
 export const STATS: { value: string; label: string }[] = [
-  { value: "1.5K+", label: "followers" },
-  { value: "11.7K+", label: "likes" },
-  { value: "62K", label: "views sur une coupe" },
+  { value: "8K+", label: "followers · TikTok, Insta & Facebook" },
+  { value: "57K+", label: "likes" },
+  { value: "195K+", label: "views" },
 ];
 
 // -------------------------------------------------------------------------
@@ -86,14 +93,25 @@ export type Barber = {
   tagline: string;
   isOwner?: boolean;
   photo?: string;
+  socials?: { kind: "tiktok" | "instagram" | "facebook"; url: string }[];
 };
 
 export const BARBERS: Barber[] = [
-  { id: "3ebchi", name: "3EBCHI", tagline: "El King 🦍 — fondateur", isOwner: true, photo: "/barbers/3ebchi.jpg" },
-  { id: "achref", name: "ACHREF", tagline: "Fade spécialiste", photo: "/barbers/achref.jpg" },
-  { id: "brag", name: "BRAG", tagline: "Style w precision", photo: "/barbers/brag.jpg" },
+  { id: "3ebchi", name: "3EBCHI", tagline: "El King 🦍 — fondateur", isOwner: true, photo: "/barbers/3ebchi.jpg", socials: [
+      { kind: "tiktok", url: "https://www.tiktok.com/@abdouabidi8" },
+      { kind: "instagram", url: "https://www.instagram.com/abdouabidi/" },
+      { kind: "facebook", url: "https://www.facebook.com/abdouu.abidi" },
+    ] },
+  { id: "achref", name: "ACHREF", tagline: "Fade spécialiste", photo: "/barbers/achref.jpg", socials: [
+      { kind: "instagram", url: "https://www.instagram.com/achref.mannai/" },
+      { kind: "facebook", url: "https://www.facebook.com/achref.mannai.902" },
+    ] },
+  { id: "brag", name: "BRAG", tagline: "Style w precision", photo: "/barbers/brag.jpg", socials: [{ kind: "instagram", url: "https://www.instagram.com/_la_ruee_09/" }] },
   // id "imed" conservé en interne (lié à la BDD et au PIN) — affiché "BAFFI".
-  { id: "imed", name: "BAFFI", tagline: "Barbe w contours", photo: "/barbers/baffi.jpg" },
+  { id: "imed", name: "BAFFI", tagline: "Barbe w contours", photo: "/barbers/baffi.jpg", socials: [
+      { kind: "instagram", url: "https://www.instagram.com/baffi1312/" },
+      { kind: "facebook", url: "https://www.facebook.com/imed.bf.5" },
+    ] },
 ];
 
 // -------------------------------------------------------------------------
@@ -154,6 +172,12 @@ export const VIDEOS: TikTokVideo[] = [
   { title: "Clubiste fresh cut", views: "10.7K", url: "https://www.tiktok.com/@abdouabidi8/video/7578576569094917388", src: "/reels/clubiste.mp4", poster: "/reels/clubiste.jpg" },
   { title: "Maghreb hajema 🇹🇳🇱🇾🇩🇿", views: "4.1K", url: "https://www.tiktok.com/@abdouabidi8/video/7533378595285159173", src: "/reels/maghreb.mp4", poster: "/reels/maghreb.jpg" },
   { title: "Ali Youssef ⚽✂️", views: "3.3K", url: "https://www.tiktok.com/@abdouabidi8/video/7479957347922709766", src: "/reels/ali-youssef.mp4", poster: "/reels/ali-youssef.jpg" },
+  { title: "Long hair → fresh 💇‍♂️", views: "3.5K", url: "https://www.tiktok.com/@abdouabidi8/video/7193414806794177797", src: "/reels/long-hair.mp4", poster: "/reels/long-hair.jpg" },
+  { title: "Fresh fade ✂️", views: "3.8K", url: "https://www.tiktok.com/@abdouabidi8/video/7465320950070840582", src: "/reels/fresh-fade.mp4", poster: "/reels/fresh-fade.jpg" },
+  { title: "Home barber classic 💈", views: "4K", url: "https://www.tiktok.com/@abdouabidi8/video/7097295304160038150", src: "/reels/home-barber.mp4", poster: "/reels/home-barber.jpg" },
+  { title: "Lahya w style 🧔", views: "3.6K", url: "https://www.tiktok.com/@abdouabidi8/video/7101220318299131141", src: "/reels/beard-style.mp4", poster: "/reels/beard-style.jpg" },
+  { title: "Wahl Senior fade ⚡", views: "2.9K", url: "https://www.tiktok.com/@abdouabidi8/video/7198254891209379077", src: "/reels/wahl-senior.mp4", poster: "/reels/wahl-senior.jpg" },
+  { title: "Fresh look 🔥", views: "3.2K", url: "https://www.tiktok.com/@abdouabidi8/video/7558591692014636300", src: "/reels/fresh-look.mp4", poster: "/reels/fresh-look.jpg" },
 ];
 
 // -------------------------------------------------------------------------
