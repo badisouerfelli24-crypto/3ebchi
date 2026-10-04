@@ -18,7 +18,10 @@ export default function Reels() {
   const [active, setActive] = useState(-1);
   const [loaded, setLoaded] = useState<boolean[]>(VIDEOS.map(() => false));
   const [muted, setMuted] = useState(true);
-  const [progress, setProgress] = useState(0);
+  // Barres de progression mises à jour directement (sans re-rendu React) :
+  // re-rendre le carrousel plusieurs fois par seconde faisait « re-snapper »
+  // le scroll-snap sur iPhone, ce qui faisait sauter toute la page.
+  const bars = useRef<(HTMLDivElement | null)[]>([]);
   const [hint, setHint] = useState<"idle" | "show" | "done">("idle");
   const [nudge, setNudge] = useState(false);
 
@@ -67,7 +70,7 @@ export default function Reels() {
         v.pause();
       }
     });
-    setProgress(0);
+    bars.current.forEach((b) => b && (b.style.transform = "scaleX(0)"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, loaded[active]]);
 
@@ -134,8 +137,7 @@ export default function Reels() {
           ref={scroller}
           onScroll={dismissHint}
           onPointerDown={dismissHint}
-          className={`reels flex gap-3 overflow-x-auto pb-4 ${nudge ? "nudge" : ""}`}
-          onAnimationEnd={() => setNudge(false)}
+          className="reels flex gap-3 overflow-x-auto pb-4"
         >
           {VIDEOS.map((v, i) => (
             <article
@@ -161,7 +163,8 @@ export default function Reels() {
                 onTimeUpdate={(e) => {
                   if (i !== active) return;
                   const t = e.currentTarget;
-                  if (t.duration) setProgress(t.currentTime / t.duration);
+                  const bar = bars.current[i];
+                  if (t.duration && bar) bar.style.transform = `scaleX(${t.currentTime / t.duration})`;
                 }}
               />
 
@@ -191,8 +194,11 @@ export default function Reels() {
                 <div className="mt-1 font-mono text-xs text-fg/70">▶ {v.views} views</div>
                 <div className="mt-3 h-[3px] overflow-hidden rounded-full bg-white/15">
                   <div
+                    ref={(el) => {
+                      bars.current[i] = el;
+                    }}
                     className="reel-progress h-full bg-gradient-to-r from-cyan via-violet to-pink"
-                    style={{ transform: `scaleX(${i === active ? progress : 0})` }}
+                    style={{ transform: "scaleX(0)" }}
                   />
                 </div>
               </div>
@@ -208,7 +214,10 @@ export default function Reels() {
           }`}
           aria-hidden={hint !== "show"}
         >
-          <div className="flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-black/55 px-6 py-5 backdrop-blur-md">
+          <div
+            className={`flex flex-col items-center gap-3 rounded-3xl border border-white/10 bg-black/55 px-6 py-5 backdrop-blur-md ${nudge ? "nudge" : ""}`}
+            onAnimationEnd={(e) => e.target === e.currentTarget && setNudge(false)}
+          >
             <div className="relative h-14 w-24">
               <div className="swipe-trail absolute right-6 top-[18px] h-[3px] w-16 rounded-full bg-gradient-to-l from-zinc-300/0 via-zinc-300/70 to-zinc-300/0" />
               <svg viewBox="0 0 48 56" className="swipe-finger absolute right-4 top-0 h-14 w-12" fill="none">

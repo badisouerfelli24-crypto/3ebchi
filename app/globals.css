@@ -339,7 +339,9 @@ body {
   --pad: 16px;
   padding-inline: var(--pad);
   scroll-padding-inline: var(--pad);
-  scroll-snap-type: x mandatory;
+  /* proximity (et non mandatory) : Safari iOS ne force plus de « re-snap »
+     du carrousel, qui faisait défiler toute la page au milieu du site. */
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
