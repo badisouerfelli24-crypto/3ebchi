@@ -506,6 +506,11 @@ html.lenis body {
   width: 100%;
   aspect-ratio: 4 / 3;
   display: block;
+  opacity: 0;
+  transition: opacity 0.8s var(--ease);
+}
+.cine-canvas.ready {
+  opacity: 1;
 }
 .cine-vignette {
   position: absolute;
@@ -524,6 +529,9 @@ html.lenis body {
 }
 .cine-panel--hajem {
   top: calc(64px + 4svh + 75vw + 18px);
+  /* cachés tant que le script ne les a pas positionnés (pas de flash au chargement) */
+  opacity: 0;
+  visibility: hidden;
 }
 .cine-cta {
   margin-top: 18px;

@@ -93,6 +93,7 @@ export default function CinematicIntro() {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
       if (!im) return;
+      cv.classList.add("ready"); // fondu d'entrée dès la première image
       // desktop : "cover" plein écran ; mobile : "contain" (le cadre est déjà en 4:3)
       const s = desktop ? Math.max(W / im.width, H / im.height) : Math.min(W / im.width, H / im.height);
       const bw = im.width * s;
