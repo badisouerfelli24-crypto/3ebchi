@@ -228,10 +228,10 @@ function Editor({
         <Field label="Soum (DT)">
           <input className="d-input num" inputMode="decimal" value={d.price} onChange={(e) => set({ price: e.target.value.replace(/[^\d.,]/g, "") })} placeholder="Ex : 15" />
         </Field>
-        <Field label="Wa9t (d9aye9)">
+        <Field label="Wa9t (minutes)">
           <select className="d-input" value={d.durationMin} onChange={(e) => set({ durationMin: e.target.value })}>
             {durations.map((m) => (
-              <option key={m} value={m}>{m} d9i9a</option>
+              <option key={m} value={m}>{m} minutes</option>
             ))}
           </select>
         </Field>

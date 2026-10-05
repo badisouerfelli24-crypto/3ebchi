@@ -342,6 +342,8 @@
   border: 1px solid var(--border-hi);
   font-size: 15px;
 }
+/* Liste déroulante native (PC) : fond + texte explicites, sinon texte clair sur fond blanc. */
+.d-input option { background: var(--surface); color: var(--ink); }
 .d-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
 /* ---------- Navigation ---------- */
