@@ -239,7 +239,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ```
 config/site.ts          → TOUT le contenu éditable
-lib/                    → supabase, auth, slots, time, ics, validation, rateLimit
+lib/                    → supabase, auth, slots, time, validation, rateLimit
 app/
   page.tsx              → page d'accueil (toutes les sections)
   barber/page.tsx       → espace barbier (login PIN + dashboard)

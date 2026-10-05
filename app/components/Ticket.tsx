@@ -208,7 +208,9 @@ export async function renderTicketPng(t: TicketData): Promise<Blob> {
 }
 
 /* ------------------------------------------------------------------------
-   Carte affichée à l'écran + boutons Télécharger / Partager
+   Carte affichée à l'écran + un seul gros bouton (sticky) pour enregistrer
+   le ticket en IMAGE. Sur téléphone, on passe par la feuille de partage
+   (« Enregistrer l'image » -> Photos) ; sinon, téléchargement du PNG.
    ------------------------------------------------------------------------ */
 export default function Ticket({ t }: { t: TicketData }) {
   const [busy, setBusy] = useState(false);
@@ -218,14 +220,23 @@ export default function Ticket({ t }: { t: TicketData }) {
   useEffect(() => {
     try {
       const f = new File([new Blob()], "x.png", { type: "image/png" });
-      setCanShare(!!navigator.canShare?.({ files: [f] }));
+      // Feuille de partage uniquement sur écran tactile (Photos sur iPhone / Android).
+      setCanShare(!!navigator.canShare?.({ files: [f] }) && matchMedia("(pointer: coarse)").matches);
     } catch {}
   }, []);
 
-  async function download() {
+  async function saveImage() {
     setBusy(true);
     try {
       const blob = await renderTicketPng(t);
+      if (canShare) {
+        try {
+          await navigator.share({ files: [new File([blob], fileName, { type: "image/png" })], title: "Ticket 3ebchi style" });
+          return;
+        } catch (e) {
+          if ((e as Error).name === "AbortError") return; // partage annulé
+        }
+      }
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -234,19 +245,6 @@ export default function Ticket({ t }: { t: TicketData }) {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 4000);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function share() {
-    setBusy(true);
-    try {
-      const blob = await renderTicketPng(t);
-      const file = new File([blob], fileName, { type: "image/png" });
-      await navigator.share({ files: [file], title: "Ticket 3ebchi style" });
-    } catch {
-      // partage annulé
     } finally {
       setBusy(false);
     }
@@ -300,15 +298,22 @@ export default function Ticket({ t }: { t: TicketData }) {
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3">
-        <button onClick={download} disabled={busy} className="btn btn-primary w-full disabled:opacity-60">
-          {busy ? "…" : "⬇ Télécharger le ticket (PNG)"}
+      {/* Bouton sticky : reste visible en bas de l'écran tant que le ticket est là. */}
+      <div className="sticky bottom-3 z-30 mt-5 pb-[env(safe-area-inset-bottom)]">
+        <button
+          onClick={saveImage}
+          disabled={busy}
+          className="btn btn-primary min-h-[72px] w-full flex-col !gap-1 !rounded-3xl !px-5 !py-4 text-center text-lg leading-tight shadow-2xl disabled:opacity-60 sm:text-xl"
+        >
+          {busy ? (
+            "…"
+          ) : (
+            <>
+              <span>⬇ Maghir matsob el coupon, el réservation mte3ek mahech confirmé</span>
+              <span className="text-[12px] font-semibold opacity-60">Télécharger en image (PNG)</span>
+            </>
+          )}
         </button>
-        {canShare && (
-          <button onClick={share} disabled={busy} className="btn btn-ghost w-full">
-            📲 Partagi / Sauvegardi fel Photos
-          </button>
-        )}
       </div>
     </div>
   );

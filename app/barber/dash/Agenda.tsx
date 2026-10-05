@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { BARBERS } from "@/config/site";
+import { BARBERS, BOOKING_WINDOW_DAYS } from "@/config/site";
 import { nextDays, labelDate, labelDateShort, weekdayOf } from "@/lib/time";
 import { isClosedDay } from "@/lib/slots";
 import { api, barberColor, dayLabel, fmtDT, STATUS_META, type Agenda as AgendaData, type Blocked, type Booking, type Status } from "./lib";
@@ -58,6 +58,12 @@ export function Agenda({
       started={b.date < data.today || (b.date === data.today && b.start_time.slice(0, 5) <= now)}
       showBarber={false}
       onOutcome={(o) => setOutcome(b, o)}
+      canMove={b.barber === meId}
+      onMoved={(msg) => {
+        notify(msg, "good");
+        onChanged();
+      }}
+      notify={notify}
     />
   );
 
@@ -176,8 +182,25 @@ function ByBarber({ list, isShop, render, showDate, today }: { list: Booking[]; 
 }
 
 /* ----------------------- Carte de réservation ----------------------- */
-function BookingItem({ b, started, showBarber, onOutcome }: { b: Booking; started: boolean; showBarber: boolean; onOutcome: (o: Status) => void }) {
+function BookingItem({
+  b,
+  started,
+  showBarber,
+  onOutcome,
+  canMove,
+  onMoved,
+  notify,
+}: {
+  b: Booking;
+  started: boolean;
+  showBarber: boolean;
+  onOutcome: (o: Status) => void;
+  canMove: boolean;
+  onMoved: (msg: string) => void;
+  notify: (m: string, t?: "good" | "crit") => void;
+}) {
   const [confirming, setConfirming] = useState<Status | null>(null);
+  const [moving, setMoving] = useState(false);
   const meta = STATUS_META[b.status];
   const settled = b.status !== "confirmed";
   const tel = `+${b.phone}`;
@@ -250,6 +273,11 @@ function BookingItem({ b, started, showBarber, onOutcome }: { b: Booking; starte
         </a>
         <span className="ml-1 truncate text-[12px] text-[var(--ink-3)] tnum">{tel}</span>
         <div className="ml-auto flex shrink-0 gap-2">
+          {!settled && !started && canMove && (
+            <button type="button" onClick={() => setMoving((m) => !m)} className={`d-btn ${moving ? "d-btn-primary" : "d-btn-ghost"} d-btn-sm`}>
+              <Icon name="calendar" size={16} />Reporter
+            </button>
+          )}
           {!settled && !started && (
             <button type="button" onClick={() => ask("cancelled")} className={`d-btn d-btn-tone d-btn-sm ${confirming === "cancelled" ? "is-solid" : ""}`} style={{ "--tone": "var(--crit)" } as React.CSSProperties}>
               <Icon name="x" size={16} stroke={2.4} />{confirming === "cancelled" ? "Confirmer" : "Annuler"}
@@ -262,7 +290,105 @@ function BookingItem({ b, started, showBarber, onOutcome }: { b: Booking; starte
           )}
         </div>
       </div>
+
+      {moving && !settled && !started && canMove && (
+        <ReschedulePanel
+          b={b}
+          onDone={(msg) => {
+            setMoving(false);
+            onMoved(msg);
+          }}
+          notify={notify}
+        />
+      )}
     </article>
+  );
+}
+
+/* ----------------------- Reporter une réservation ----------------------- */
+type MoveSlot = { time: string; available: boolean };
+
+function ReschedulePanel({ b, onDone, notify }: { b: Booking; onDone: (msg: string) => void; notify: (m: string, t?: "good" | "crit") => void }) {
+  const days = nextDays(BOOKING_WINDOW_DAYS).filter((d) => !isClosedDay(d));
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [slots, setSlots] = useState<MoveSlot[] | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function pickDay(d: string) {
+    setDate(d);
+    setTime("");
+    setSlots(null);
+    try {
+      const r = await api<{ slots: MoveSlot[] }>(`/api/barber/reschedule?id=${b.id}&date=${d}`);
+      setSlots(r.slots);
+    } catch (e) {
+      setSlots([]);
+      notify((e as Error).message, "crit");
+    }
+  }
+
+  async function save() {
+    if (!date || !time) return;
+    setBusy(true);
+    try {
+      await api("/api/barber/reschedule", { method: "POST", body: JSON.stringify({ id: b.id, date, time }) });
+      onDone(`Reportée au ${dayLabel(date)} à ${time} ✓`);
+    } catch (e) {
+      notify((e as Error).message, "crit");
+      pickDay(date);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 border-t border-[var(--border)] p-3.5" style={{ background: "var(--card-hi)" }}>
+      <div className="eyebrow">Reporter à…</div>
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+        {days.map((d) => {
+          const on = date === d;
+          return (
+            <button key={d} type="button" onClick={() => pickDay(d)} aria-pressed={on}
+              className="rounded-xl border px-1 py-2 text-[12px] font-semibold transition-all"
+              style={{
+                borderColor: on ? "var(--accent)" : "var(--border)",
+                background: on ? "var(--accent-soft)" : "transparent",
+                color: on ? "var(--ink)" : "var(--ink-2)",
+              }}>
+              {["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][weekdayOf(d)]}
+              <span className="block text-[11px] font-medium text-[var(--ink-3)]">{labelDateShort(d)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {date && slots === null && <p className="text-[13px] text-[var(--ink-3)]">…</p>}
+      {date && slots && slots.length === 0 && <p className="text-[13px] text-[var(--ink-3)]">Aucun créneau ce jour-là.</p>}
+      {date && slots && slots.length > 0 && (
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {slots.map((s) => {
+            const on = time === s.time;
+            const current = date === b.date && s.time === b.start_time.slice(0, 5);
+            return (
+              <button key={s.time} type="button" disabled={!s.available || current} onClick={() => setTime(s.time)} aria-pressed={on}
+                className="num rounded-xl border py-2 text-[13px] font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-35"
+                style={{
+                  borderColor: on ? "var(--accent)" : "var(--border)",
+                  background: on ? "var(--accent-soft)" : "transparent",
+                  textDecoration: s.available ? undefined : "line-through",
+                }}>
+                {s.time}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <button type="button" onClick={save} disabled={busy || !date || !time} className="d-btn d-btn-primary w-full">
+        <Icon name="check" size={17} stroke={2.4} />{busy ? "…" : time ? `Reporter au ${dayLabel(date)} · ${time}` : "Choisis nhar w wa9t"}
+      </button>
+    </div>
   );
 }
 

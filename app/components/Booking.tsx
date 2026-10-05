@@ -7,12 +7,49 @@ import { BARBERS, SERVICES, SITE, BOOKING_WINDOW_DAYS, getBarber, getService } f
 import { nextDays, labelDate, labelDateShort, weekdayOf } from "@/lib/time";
 import { isClosedDay } from "@/lib/slots";
 import { normalizeTunisianPhone, isValidName } from "@/lib/validation";
-import { buildIcs } from "@/lib/ics";
 import SectionHead from "./SectionHead";
-import Ticket from "./Ticket";
+import Ticket, { type TicketData } from "./Ticket";
 
 type Slot = { time: string; available: boolean; reason?: string };
-type SuccessData = { barber: string; service: string; date: string; time: string; durationMin: number; ref: string; name: string };
+
+/* ------------------------------------------------------------------------
+   Tickets gardés dans le navigateur (localStorage) jusqu'à la FIN du
+   rendez-vous : le client peut quitter le site et revenir, son coupon est
+   toujours là. Ensuite il disparaît tout seul.
+   ------------------------------------------------------------------------ */
+type StoredTicket = TicketData & { endsAt: number };
+const TICKETS_KEY = "3ebchi:tickets";
+
+/** Fin du rendez-vous (timestamp ms) — date/heure exprimées à Tunis. */
+function endsAtTunis(date: string, time: string, durationMin: number): number {
+  const [y, m, d] = date.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  const asUtc = Date.UTC(y, m - 1, d, h, mi);
+  // Décalage de Tunis à cet instant (UTC+1, calculé plutôt que codé en dur).
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: SITE.timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date(asUtc)).map((x) => [x.type, x.value])
+  );
+  const seen = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute);
+  return asUtc - (seen - asUtc) + durationMin * 60_000;
+}
+
+function readTickets(): StoredTicket[] {
+  try {
+    const list = JSON.parse(localStorage.getItem(TICKETS_KEY) || "[]");
+    return Array.isArray(list) ? list.filter((t) => t && typeof t.endsAt === "number" && t.endsAt > Date.now()) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeTickets(list: StoredTicket[]) {
+  try {
+    if (list.length) localStorage.setItem(TICKETS_KEY, JSON.stringify(list));
+    else localStorage.removeItem(TICKETS_KEY);
+  } catch {}
+}
 
 const STEPS = ["Hajem", "Service", "Nhar", "Wa9t", "Infos", "Confirmi"];
 const DAYS_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
@@ -35,7 +72,20 @@ export default function Booking() {
   const [slotsError, setSlotsError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
-  const [success, setSuccess] = useState<SuccessData | null>(null);
+  const [tickets, setTickets] = useState<StoredTicket[]>([]);
+  const [showForm, setShowForm] = useState(false);
+
+  // Tickets encore valides au chargement, puis nettoyage quand un rendez-vous se termine.
+  useEffect(() => {
+    const prune = () => {
+      const list = readTickets();
+      writeTickets(list);
+      setTickets(list);
+    };
+    prune();
+    const t = setInterval(prune, 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const days = useMemo(() => nextDays(BOOKING_WINDOW_DAYS).filter((d) => !isClosedDay(d)), []);
 
@@ -131,7 +181,25 @@ export default function Booking() {
       });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setSuccess({ barber, service, date, time, durationMin: getService(service)!.durationMin, ref: data.ref || "", name: name.trim() });
+        const bx = getBarber(barber)!;
+        const sx = getService(service)!;
+        const ticket: StoredTicket = {
+          ref: data.ref || "",
+          name: name.trim(),
+          hajem: bx.name,
+          hajemPhoto: bx.photo,
+          service: sx.name,
+          price: sx.price,
+          durationMin: sx.durationMin,
+          date,
+          time,
+          endsAt: endsAtTunis(date, time, sx.durationMin),
+        };
+        const list = [ticket, ...readTickets().filter((t) => t.ref !== ticket.ref)];
+        writeTickets(list);
+        setTickets(list);
+        setShowForm(false);
+        clearForm();
         // ramener le ticket à l'écran
         requestAnimationFrame(() => smoothScrollTo("booking"));
         return;
@@ -153,25 +221,7 @@ export default function Booking() {
     }
   }
 
-  function downloadIcs() {
-    if (!success) return;
-    const ics = buildIcs({
-      date: success.date,
-      startTime: success.time,
-      durationMin: success.durationMin,
-      barber: getBarber(success.barber)!.name,
-      service: getService(success.service)!.name,
-    });
-    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "3ebchi-style-rdv.ics";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function reset() {
-    setSuccess(null);
+  function clearForm() {
     setStep(1);
     setBarber("");
     setService("");
@@ -183,6 +233,12 @@ export default function Booking() {
     setFormError("");
   }
 
+  // "Réservi marra o5ra" : le(s) ticket(s) restent affichés, le formulaire s'ouvre en dessous.
+  function bookAgain() {
+    clearForm();
+    setShowForm(true);
+  }
+
   const b = getBarber(barber);
   const svc = getService(service);
 
@@ -191,44 +247,35 @@ export default function Booking() {
       <div className="mx-auto max-w-6xl">
         <SectionHead n="04" label="Réservation" title="Réservi" outline="blastek" sub="6 étapes, 30 secondes. Confirmation directe." />
 
-        {success ? (
-          <div className="mx-auto max-w-md">
-            <div className="mb-6 text-center">
-              <h3 className="display text-5xl">C&apos;est réservé!</h3>
-              <p className="mt-3 text-fg/85">
-                Nchoufek <strong>{labelDate(success.date)}</strong> 3la <strong>{success.time}</strong> m3a{" "}
-                <strong>{getBarber(success.barber)!.name}</strong> 💈
-              </p>
-            </div>
+        {tickets.length > 0 && (
+          <div className="mx-auto max-w-md space-y-14">
+            {tickets.map((t, i) => (
+              <div key={t.ref || i}>
+                <div className="mb-6 text-center">
+                  {i === 0 && <h3 className="display text-5xl">C&apos;est réservé!</h3>}
+                  <p className="mt-3 text-fg/85">
+                    Nchoufek <strong>{labelDate(t.date)}</strong> 3la <strong>{t.time}</strong> m3a <strong>{t.hajem}</strong> 💈
+                  </p>
+                </div>
+                <Ticket t={t} />
+              </div>
+            ))}
 
-            <Ticket
-              t={{
-                ref: success.ref,
-                name: success.name,
-                hajem: getBarber(success.barber)!.name,
-                hajemPhoto: getBarber(success.barber)!.photo,
-                service: getService(success.service)!.name,
-                price: getService(success.service)!.price,
-                durationMin: success.durationMin,
-                date: success.date,
-                time: success.time,
-              }}
-            />
-
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <button onClick={downloadIcs} className="btn btn-ghost !px-3 text-sm">
-                📅 Calendrier
-              </button>
-              <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost !px-3 text-sm">
+            <div>
+              <a href={SITE.mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-ghost w-full !px-3 text-sm">
                 📍 Maps
               </a>
+              {!showForm && (
+                <button onClick={bookAgain} className="mx-auto mt-5 block text-sm text-muted underline underline-offset-4">
+                  Réservi marra o5ra
+                </button>
+              )}
             </div>
-            <button onClick={reset} className="mx-auto mt-5 block text-sm text-muted underline underline-offset-4">
-              Réservi marra o5ra
-            </button>
           </div>
-        ) : (
-          <div className="card grid overflow-hidden lg:grid-cols-[280px_1fr]">
+        )}
+
+        {(tickets.length === 0 || showForm) && (
+          <div className={`card grid overflow-hidden lg:grid-cols-[280px_1fr] ${tickets.length ? "mt-14" : ""}`}>
             {/* Rail de progression */}
             <aside className="border-b border-line p-5 lg:border-b-0 lg:border-r lg:p-7">
               <div className="font-mono text-xs tracking-[0.2em] text-muted">
