@@ -1,14 +1,14 @@
 "use client";
 
 import { smoothScrollTo } from "@/lib/smoothScroll";
-import { SERVICES, packSaving, type Service } from "@/config/site";
+import { packSaving, type Service } from "@/config/site";
 import SectionHead from "./SectionHead";
 
-const SOLO = SERVICES.filter((s) => s.kind === "solo");
-const PACKS = SERVICES.filter((s) => s.kind === "pack" && !s.premium);
-const VIP = SERVICES.find((s) => s.premium);
+export default function Services({ services }: { services: Service[] }) {
+  const VIP = services.find((s) => s.kind === "pack" && s.premium);
+  const PACKS = services.filter((s) => s.kind === "pack" && s !== VIP);
+  const SOLO = services.filter((s) => s.kind === "solo");
 
-export default function Services() {
   function pick(id: string) {
     window.dispatchEvent(new CustomEvent("select-service", { detail: id }));
     smoothScrollTo("booking");
@@ -46,7 +46,7 @@ export default function Services() {
                     <span className="font-mono text-xs tracking-[0.3em] text-[#f3e7c9]/70">DINARS</span>
                   </span>
                   <span className="vip-cta">
-                    Réservi Za9lamni Pack <span aria-hidden>→</span>
+                    Réservi {VIP.name} <span aria-hidden>→</span>
                   </span>
                 </span>
               </span>
@@ -55,27 +55,34 @@ export default function Services() {
         )}
 
         {/* ---- Packs ---- */}
-        <h3 className="mb-3 mt-12 font-mono text-xs tracking-[0.3em] text-cyan">// PACKS — T5ALLES 9AL</h3>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {PACKS.map((s, i) => (
-            <PriceCard key={s.id} s={s} onPick={pick} delay={i * 70} />
-          ))}
-        </div>
+        {PACKS.length > 0 && (
+          <>
+            <h3 className="mb-3 mt-12 font-mono text-xs tracking-[0.3em] text-cyan">// PACKS — T5ALLES 9AL</h3>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {PACKS.map((s, i) => (
+                <PriceCard key={s.id} s={s} save={packSaving(s, services)} onPick={pick} delay={i * 70} />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* ---- Services seuls ---- */}
-        <h3 className="mb-3 mt-12 font-mono text-xs tracking-[0.3em] text-cyan">// WA7DOU</h3>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {SOLO.map((s, i) => (
-            <PriceCard key={s.id} s={s} onPick={pick} delay={i * 70} />
-          ))}
-        </div>
+        {SOLO.length > 0 && (
+          <>
+            <h3 className="mb-3 mt-12 font-mono text-xs tracking-[0.3em] text-cyan">// WA7DOU</h3>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {SOLO.map((s, i) => (
+                <PriceCard key={s.id} s={s} save={0} onPick={pick} delay={i * 70} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </section>
   );
 }
 
-function PriceCard({ s, onPick, delay }: { s: Service; onPick: (id: string) => void; delay: number }) {
-  const save = packSaving(s);
+function PriceCard({ s, save, onPick, delay }: { s: Service; save: number; onPick: (id: string) => void; delay: number }) {
   return (
     <button
       type="button"

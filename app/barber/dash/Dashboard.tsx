@@ -8,8 +8,9 @@ import { Icon, Avatar } from "./ui";
 import { Overview } from "./Overview";
 import { Agenda } from "./Agenda";
 import { Settings } from "./Settings";
+import { Prices } from "./Prices";
 
-type Tab = "overview" | "agenda" | "settings";
+type Tab = "overview" | "agenda" | "prices" | "settings";
 type Toast = { id: number; title: string; body?: string; tone: "good" | "crit" | "accent"; color?: string };
 
 const TABS: { key: Tab; label: string; icon: string }[] = [
@@ -17,6 +18,8 @@ const TABS: { key: Tab; label: string; icon: string }[] = [
   { key: "agenda", label: "Agenda", icon: "calendar" },
   { key: "settings", label: "Réglages", icon: "settings" },
 ];
+// Onglet « Prix » : visible pour le owner (3EBCHI) uniquement (l'API le vérifie aussi).
+const PRICES_TAB: { key: Tab; label: string; icon: string } = { key: "prices", label: "Prix", icon: "tag" };
 
 const POLL_MS = 30_000;
 
@@ -39,6 +42,7 @@ export default function Dashboard({ me, onLogout }: { me: Me; onLogout: () => vo
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [sound, setSound] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
+  const tabs = me.isOwner ? [TABS[0], TABS[1], PRICES_TAB, TABS[2]] : TABS;
   const [scope, setScope] = useState<string>(me.isOwner ? "shop" : me.id);
   const [period, setPeriod] = useState<PeriodKey>("today");
   const [stats, setStats] = useState<Record<string, StatsPayload>>({});
@@ -54,7 +58,7 @@ export default function Dashboard({ me, onLogout }: { me: Me; onLogout: () => vo
     if (readLS("dash-sound") === "off") setSound(false);
     const q = new URLSearchParams(location.search);
     const t = q.get("tab");
-    if (t === "agenda" || t === "settings" || t === "overview") setTab(t);
+    if (t === "agenda" || t === "settings" || t === "overview" || (t === "prices" && me.isOwner)) setTab(t);
     const s = q.get("scope");
     if (s && (s === me.id || (me.isOwner && (s === "shop" || BARBERS.some((b) => b.id === s))))) setScope(s);
   }, [me]);
@@ -278,7 +282,7 @@ export default function Dashboard({ me, onLogout }: { me: Me; onLogout: () => vo
             </span>
           </div>
           <nav className="space-y-1">
-            {TABS.map((t) => (
+            {tabs.map((t) => (
               <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-current={tab === t.key ? "page" : undefined} className="d-side-link">
                 <Icon name={t.icon} size={19} />
                 {t.label}
@@ -331,13 +335,13 @@ export default function Dashboard({ me, onLogout }: { me: Me; onLogout: () => vo
             {/* Titre desktop */}
             <div className="mb-6 hidden items-end justify-between gap-4 lg:flex">
               <div>
-                <div className="eyebrow">{TABS.find((t) => t.key === tab)?.label}</div>
-                <h1 className="mt-1 font-display text-[30px] font-black tracking-tight">{scopeTitle}</h1>
+                <div className="eyebrow">{tabs.find((t) => t.key === tab)?.label}</div>
+                <h1 className="mt-1 font-display text-[30px] font-black tracking-tight">{tab === "prices" ? "Les prix" : scopeTitle}</h1>
               </div>
               <span className="flex items-center gap-2 text-[12.5px] text-[var(--ink-3)]"><span className="d-live" />Mise à jour en direct</span>
             </div>
 
-            {tab !== "settings" && me.isOwner && (
+            {tab !== "settings" && tab !== "prices" && me.isOwner && (
               <div className="mb-3 lg:hidden">{scopeChips()}</div>
             )}
 
@@ -360,6 +364,7 @@ export default function Dashboard({ me, onLogout }: { me: Me; onLogout: () => vo
               ) : (
                 <Skeleton />
               ))}
+            {tab === "prices" && me.isOwner && <Prices notify={(m, t) => notify(m, t)} />}
             {tab === "settings" && (
               <Settings me={me} theme={theme} onTheme={changeTheme} sound={sound} onSound={changeSound} notify={(m, t) => notify(m, t)} />
             )}
@@ -368,8 +373,8 @@ export default function Dashboard({ me, onLogout }: { me: Me; onLogout: () => vo
       </div>
 
       {/* ---------- Barre d'onglets (mobile) ---------- */}
-      <nav className="d-tabbar lg:hidden" aria-label="Navigation">
-        {TABS.map((t) => (
+      <nav className="d-tabbar lg:hidden" aria-label="Navigation" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
+        {tabs.map((t) => (
           <button key={t.key} type="button" onClick={() => setTab(t.key)} aria-current={tab === t.key ? "page" : undefined}>
             <Icon name={t.icon} size={21} />
             {t.label}

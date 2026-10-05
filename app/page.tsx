@@ -12,8 +12,13 @@ import Footer from "./components/Footer";
 import FloatingCTA from "./components/FloatingCTA";
 import RevealRoot from "./components/RevealRoot";
 import ScrollManager from "./components/ScrollManager";
+import { getServices } from "@/lib/services";
 
-export default function Home() {
+// Rendu à chaque visite : les prix / packs changés depuis /barber sont en ligne tout de suite.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const services = await getServices();
   return (
     <>
       <div className="ambient" aria-hidden>
@@ -30,8 +35,8 @@ export default function Home() {
         <Stats />
         <Reels />
         <Barbers />
-        <Services />
-        <Booking />
+        <Services services={services} />
+        <Booking services={services} />
         <Location />
       </main>
       <div className="page">

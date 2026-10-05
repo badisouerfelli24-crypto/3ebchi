@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getBarber, getService } from "@/config/site";
+import { getBarber } from "@/config/site";
+import { findService } from "@/lib/services";
 import { normalizeTunisianPhone, isValidName, sanitizeNote } from "@/lib/validation";
 import { isClosedDay, dayWindow } from "@/lib/slots";
 import { todayTunis, toMinutes } from "@/lib/time";
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
 
   // --- Validations ---
   const barber = getBarber(barberId);
-  const service = getService(serviceId);
+  const service = await findService(serviceId);
   const phone = normalizeTunisianPhone(phoneRaw);
 
   if (!barber) return bad("Barber inconnu");

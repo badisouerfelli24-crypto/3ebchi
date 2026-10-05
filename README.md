@@ -21,13 +21,21 @@ Stack : **Next.js (App Router) + TypeScript + Tailwind + Supabase**. Déployable
 | **La durée d'un créneau** (30 min par défaut) | `SLOT_MINUTES` |
 | Combien de jours à l'avance on peut réserver | `BOOKING_WINDOW_DAYS` |
 | **Les barbiers** (nom, punchline, photo) | `BARBERS` |
-| **Les services et les prix** | `SERVICES` |
+| **Les services, packs, prix et durées** | **`/barber` → onglet « Prix »** (3EBCHI seulement, en ligne direct) |
 | **Les reels** (carrousel vidéo) | `VIDEOS` + fichiers dans `public/reels/` |
 
 Après chaque modif : si en local, le site se recharge tout seul (`npm run dev`).
 En production : **re-déployer** (un `git push` suffit si connecté à Vercel).
 
-### Changer les prix / horaires / vidéos — exemple
+### Changer les prix / packs / durées
+
+Depuis **`/barber` → onglet « Prix »** (visible et autorisé **uniquement pour 3EBCHI**) :
+changer soum, wa9t, esm, wasf ; zid service wa7dou ou pack ; fassa5 ; choisir le pack VIP.
+Chaque « Sajjel » est en ligne tout de suite (table Supabase `services`,
+voir [`supabase/migration_services.sql`](supabase/migration_services.sql)).
+`SERVICES` dans `config/site.ts` ne sert plus que de secours si la base est injoignable.
+
+### Changer les horaires / vidéos — exemple
 
 ```ts
 // config/site.ts

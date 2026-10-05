@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getBarber, getService } from "@/config/site";
+import { getBarber } from "@/config/site";
+import { findService } from "@/lib/services";
 import { generateSlots, shouldHidePast, type Interval } from "@/lib/slots";
 import { toMinutes } from "@/lib/time";
 
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
   if (!getBarber(barber)) {
     return NextResponse.json({ message: "Barber inconnu" }, { status: 400 });
   }
-  const service = getService(serviceId);
+  const service = await findService(serviceId);
   if (!service) {
     return NextResponse.json({ message: "Service inconnu" }, { status: 400 });
   }

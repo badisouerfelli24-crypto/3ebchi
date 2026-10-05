@@ -3,7 +3,7 @@
 import { smoothScrollTo } from "@/lib/smoothScroll";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { BARBERS, SERVICES, SITE, BOOKING_WINDOW_DAYS, getBarber, getService } from "@/config/site";
+import { BARBERS, SITE, BOOKING_WINDOW_DAYS, getBarber, type Service } from "@/config/site";
 import { nextDays, labelDate, labelDateShort, weekdayOf } from "@/lib/time";
 import { isClosedDay } from "@/lib/slots";
 import { normalizeTunisianPhone, isValidName } from "@/lib/validation";
@@ -54,7 +54,8 @@ function writeTickets(list: StoredTicket[]) {
 const STEPS = ["Hajem", "Service", "Nhar", "Wa9t", "Infos", "Confirmi"];
 const DAYS_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
-export default function Booking() {
+export default function Booking({ services }: { services: Service[] }) {
+  const getService = (id: string) => services.find((s) => s.id === id);
   const [step, setStep] = useState(1);
   const [barber, setBarber] = useState("");
   const [service, setService] = useState("");
@@ -347,7 +348,7 @@ export default function Booking() {
               {step === 2 && (
                 <Step title="A5tar l'service" onBack={() => setStep(1)}>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {SERVICES.map((s) => (
+                    {services.map((s) => (
                       <Tile key={s.id} vip={s.premium} selected={service === s.id} onClick={() => { setService(s.id); setStep(date && prefTime ? 4 : 3); }}>
                         <div className="flex items-center justify-between gap-3">
                           <div>

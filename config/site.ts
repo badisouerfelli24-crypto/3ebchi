@@ -115,7 +115,10 @@ export const BARBERS: Barber[] = [
 ];
 
 // -------------------------------------------------------------------------
-// SERVICES & PRIX
+// SERVICES & PRIX — valeurs de départ uniquement.
+// Les prix / packs / durées en ligne viennent de la table Supabase `services`
+// et se changent depuis /barber → onglet « Prix » (owner 3EBCHI seulement).
+// Cette liste ne sert que si la base est injoignable.
 // -------------------------------------------------------------------------
 // id          : identifiant interne.
 // name        : nom affiché.
@@ -186,8 +189,9 @@ export const VIDEOS: TikTokVideo[] = [
 export const getBarber = (id: string) => BARBERS.find((b) => b.id === id);
 export const getService = (id: string) => SERVICES.find((s) => s.id === id);
 // Économie d'un pack par rapport aux services pris séparément (0 si aucune).
-export const packSaving = (s: Service) =>
-  s.parts ? Math.max(0, s.parts.reduce((t, id) => t + (getService(id)?.price ?? 0), 0) - s.price) : 0;
+// `list` : la liste en cours (celle de la base, modifiable depuis /barber).
+export const packSaving = (s: Service, list: Service[] = SERVICES) =>
+  s.parts?.length ? Math.max(0, s.parts.reduce((t, id) => t + (list.find((x) => x.id === id)?.price ?? 0), 0) - s.price) : 0;
 export const isOwner = (id: string) => !!getBarber(id)?.isOwner;
 
 // Nombre de créneaux consécutifs occupés par un service.
